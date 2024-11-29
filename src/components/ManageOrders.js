@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { OrdersContext } from "../context/OrdersContext";
+import { OrdersContext } from "../../context/OrdersContext";
 
 const ManageOrders = () => {
     const { orders, setOrders } = useContext(OrdersContext);
