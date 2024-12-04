@@ -4,21 +4,28 @@ const UpdateOrder = () => {
   const [orders, setOrders] = useState([]);
   const [webSocket, setWebSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         const response = await fetch("http://localhost:4000/orders");
+        if (!response.ok) {
+          throw new Error("Erro ao buscar pedidos");
+        }
         const data = await response.json();
         setOrders(data);
-      } catch (error) {
-        console.error("Erro ao buscar pedidos:", error);
+      } catch (err) {
+        console.error(err);
+        setError("Não foi possível carregar os pedidos. Tente novamente mais tarde.");
       }
     };
 
     fetchOrders();
 
     const connectWebSocket = () => {
+      if (webSocket) return; // Evita múltiplas conexões
+
       const ws = new WebSocket("ws://localhost:4000");
 
       ws.onopen = () => {
@@ -40,24 +47,25 @@ const UpdateOrder = () => {
               )
             );
           }
-        } catch (error) {
-          console.error("Erro ao processar a mensagem WebSocket:", error);
+        } catch (err) {
+          console.error("Erro ao processar a mensagem WebSocket:", err);
         }
       };
 
       ws.onclose = () => {
         console.log("Conexão WebSocket fechada. Tentando reconectar...");
+        setWebSocket(null); // Garante que uma nova conexão será criada
         setIsConnected(false);
-        setTimeout(connectWebSocket, 5000); // Tentando reconectar após 5 segundos
+        setTimeout(connectWebSocket, 5000); // Tentativa de reconexão
       };
 
-      ws.onerror = (error) => {
-        console.error("Erro no WebSocket:", error);
+      ws.onerror = (err) => {
+        console.error("Erro no WebSocket:", err);
       };
     };
 
     if (!isConnected) {
-      connectWebSocket(); // Inicializa a conexão WebSocket
+      connectWebSocket();
     }
 
     return () => {
@@ -65,7 +73,7 @@ const UpdateOrder = () => {
         webSocket.close();
       }
     };
-  }, [isConnected, webSocket]);
+  }, [isConnected]);
 
   const updateOrderStatus = async (id, status) => {
     try {
@@ -80,22 +88,31 @@ const UpdateOrder = () => {
       if (response.ok) {
         console.log("Status do pedido atualizado com sucesso.");
       } else {
-        console.error("Erro ao atualizar o status do pedido:", await response.json());
+        const errorResponse = await response.json();
+        console.error("Erro ao atualizar o status do pedido:", errorResponse);
       }
-    } catch (error) {
-      console.error("Erro na requisição de atualização:", error);
+    } catch (err) {
+      console.error("Erro na requisição de atualização:", err);
     }
   };
 
   return (
     <div>
       <h2>Atualizar Pedidos</h2>
-      {orders.length === 0 ? (
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {orders.length === 0 && !error ? (
         <p>Carregando pedidos...</p>
       ) : (
         <ul>
           {orders.map((order) => (
-            <li key={order.id} style={{ marginBottom: "20px", border: "1px solid #ccc", padding: "10px" }}>
+            <li
+              key={order.id}
+              style={{
+                marginBottom: "20px",
+                border: "1px solid #ccc",
+                padding: "10px",
+              }}
+            >
               <p>
                 <strong>ID:</strong> {order.id}
               </p>
@@ -112,14 +129,22 @@ const UpdateOrder = () => {
               </p>
               {order.photo && (
                 <div>
-                  <p><strong>Foto do cliente:</strong></p>
+                  <p>
+                    <strong>Foto do cliente:</strong>
+                  </p>
                   <img src={order.photo} alt="Cliente" width="100" />
                 </div>
               )}
               <div>
-                <button onClick={() => updateOrderStatus(order.id, "Pendente")}>Pendente</button>
-                <button onClick={() => updateOrderStatus(order.id, "Pronto")}>Pronto</button>
-                <button onClick={() => updateOrderStatus(order.id, "Cancelado")}>Cancelado</button>
+                <button onClick={() => updateOrderStatus(order.id, "Pendente")}>
+                  Pendente
+                </button>
+                <button onClick={() => updateOrderStatus(order.id, "Pronto")}>
+                  Pronto
+                </button>
+                <button onClick={() => updateOrderStatus(order.id, "Cancelado")}>
+                  Cancelado
+                </button>
               </div>
             </li>
           ))}
