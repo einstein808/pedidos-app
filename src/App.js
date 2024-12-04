@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import OrderForm from './components/OrderForm';
 import OrderStatus from './components/OrderStatus';
 import UpdateOrder from './components/UpdateOrder';
+import CreateDrink from './components/CreateDrink';
 
 function App() {
   return (
@@ -13,7 +14,7 @@ function App() {
         <Route path="/make-order" element={<OrderForm />} />
         <Route path="/order-status" element={<OrderStatus />} />
         <Route path="/update-order" element={<UpdateOrder />} />
-        <Route path="/" element={<div>Bem-vindo! Selecione uma página.</div>} />
+        <Route path="/create-drink" element={<CreateDrink/>} />
       </Routes>
     </Router>
   );

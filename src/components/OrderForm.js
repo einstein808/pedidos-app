@@ -1,9 +1,11 @@
-import React, { useState, useRef } from 'react';
-import Webcam from 'react-webcam';
+import React, { useState, useEffect, useRef } from "react";
+import Webcam from "react-webcam";
 
 const OrderForm = () => {
-  const [drink, setDrink] = useState('');
+  const [drinks, setDrinks] = useState([]); // Estado para armazenar a lista de drinks
+  const [selectedDrink, setSelectedDrink] = useState(""); // Estado para o drink selecionado
   const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(false); // Estado para exibir carregamento
   const webcamRef = useRef(null);
 
   // Função para capturar a foto
@@ -12,44 +14,59 @@ const OrderForm = () => {
     setPhoto(imageSrc);
   };
 
+  // Função para carregar os drinks do backend
+  useEffect(() => {
+    const fetchDrinks = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/drinks");
+        if (response.ok) {
+          const data = await response.json();
+          setDrinks(data);
+        } else {
+          console.error("Erro ao carregar drinks:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Erro na requisição:", error);
+      }
+    };
+
+    fetchDrinks();
+  }, []);
+
   // Função para enviar o pedido
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Se a foto não foi tirada ou o drink não foi preenchido, avise o usuário
-    if (!photo || !drink) {
-      alert('Por favor, tire uma foto e selecione uma bebida.');
+    if (!photo || !selectedDrink) {
+      alert("Por favor, selecione um drink e tire uma foto.");
       return;
     }
 
-    const newOrder = { 
-      photo: photo, // Certifique-se de que a imagem está em base64
-      drink: drink 
-    };
+    const newOrder = { drink: selectedDrink, photo };
+
+    setLoading(true);
 
     try {
-      // Enviar para o backend
-      const response = await fetch('http://localhost:4000/orders', {
-        method: 'POST',
+      const response = await fetch("http://localhost:4000/orders", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(newOrder),
       });
 
-      // Verifica se a resposta foi bem-sucedida
       if (response.ok) {
-        alert('Pedido criado com sucesso!');
-        setDrink('');  // Limpa o campo do drink
-        setPhoto(null);  // Limpa a foto após o envio
+        alert("Pedido criado com sucesso!");
+        setSelectedDrink("");
+        setPhoto(null);
       } else {
-        // Exibe o erro detalhado, se houver
         const errorData = await response.json();
-        alert(`Erro ao criar pedido: ${errorData.message || 'Erro desconhecido'}`);
+        alert(`Erro ao criar pedido: ${errorData.message || "Erro desconhecido"}`);
       }
     } catch (error) {
-      // Captura qualquer erro de rede ou falha na requisição
-      alert('Erro na requisição: ' + error.message);
+      alert("Erro na requisição: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,7 +81,7 @@ const OrderForm = () => {
           screenshotFormat="image/jpeg"
           width="100%"
           videoConstraints={{
-            facingMode: "user"
+            facingMode: "user",
           }}
         />
         <button onClick={capture}>Tirar Foto</button>
@@ -77,19 +94,31 @@ const OrderForm = () => {
         </div>
       )}
 
-      <div>
-        <label>
-          Bebida:
-          <input
-            type="text"
-            value={drink}
-            onChange={(e) => setDrink(e.target.value)}
-            placeholder="Digite a bebida"
-          />
-        </label>
-      </div>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>
+            Selecione o Drink:
+            <select
+              value={selectedDrink}
+              onChange={(e) => setSelectedDrink(e.target.value)}
+              required
+            >
+              <option value="" disabled>
+                -- Selecione um Drink --
+              </option>
+              {drinks.map((drink) => (
+                <option key={drink.id} value={drink.name}>
+                  {drink.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-      <button onClick={handleSubmit}>Criar Pedido</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Enviando..." : "Criar Pedido"}
+        </button>
+      </form>
     </div>
   );
 };
