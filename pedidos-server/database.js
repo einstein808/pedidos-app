@@ -20,8 +20,7 @@ const initializeDatabase = () => {
     db.run(`
       CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        drink TEXT NOT NULL,
+        drinks TEXT NOT NULL,
         photo TEXT,
         status TEXT DEFAULT 'Pendente',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -42,9 +41,10 @@ const initializeDatabase = () => {
 };
 
 // Função para inserir um novo pedido
-const insertOrder = (name, drink, photo, callback) => {
-  const stmt = db.prepare('INSERT INTO orders (name, drink, photo) VALUES (?, ?, ?)');
-  stmt.run(name, drink, photo, function(err) {
+const insertOrder = (drinks, photo, callback) => {
+  const stmt = db.prepare('INSERT INTO orders (drinks, photo, status) VALUES (?, ?, ?)');
+  stmt.run(JSON.stringify(drinks), photo, 'Pendente', function (err) {
+    // O banco de dados gerencia o created_at automaticamente
     callback(err, this.lastID);
   });
   stmt.finalize();
@@ -60,34 +60,7 @@ const getAllOrders = (callback) => {
 // Função para atualizar o status de um pedido
 const updateOrderStatus = (id, status, callback) => {
   const stmt = db.prepare('UPDATE orders SET status = ? WHERE id = ?');
-  stmt.run(status, id, function(err) {
-    callback(err);
-  });
-  stmt.finalize();
-};
-
-// Função para inserir um drink
-const insertDrink = (name, ingredients, photo, isActive, callback) => {
-  const stmt = db.prepare('INSERT INTO drinks (name, ingredients, photo, is_active) VALUES (?, ?, ?, ?)');
-  stmt.run(name, ingredients, photo, isActive, function(err) {
-    callback(err, this.lastID);
-  });
-  stmt.finalize();
-};
-
-// Função para obter drinks com status ativo ou inativo
-const getDrinks = (isActive, callback) => {
-  const stmt = db.prepare('SELECT * FROM drinks WHERE is_active = ?');
-  stmt.all(isActive, (err, rows) => {
-    callback(err, rows);
-  });
-  stmt.finalize();
-};
-
-// Função para atualizar o status do drink
-const updateDrinkStatus = (id, isActive, callback) => {
-  const stmt = db.prepare('UPDATE drinks SET is_active = ? WHERE id = ?');
-  stmt.run(isActive, id, function(err) {
+  stmt.run(status, id, function (err) {
     callback(err);
   });
   stmt.finalize();
@@ -99,7 +72,4 @@ module.exports = {
   insertOrder,
   getAllOrders,
   updateOrderStatus,
-  insertDrink,
-  getDrinks,
-  updateDrinkStatus,
 };
