@@ -13,13 +13,42 @@ const OrderStatus = () => {
       const data = await response.json();
       const sortedData = data.sort((a, b) => b.id - a.id);
 
-      setPendingOrders(sortedData.filter((order) => order.status !== "Pronto").slice(0, 5));
-      setReadyOrders(sortedData.filter((order) => order.status === "Pronto").slice(0, 5));
+      setPendingOrders(
+        sortedData
+          .filter((order) => order.status !== "Pronto" && order.status !== "Cancelado")
+          .slice(0, 5)
+      );
+      setReadyOrders(
+        sortedData
+          .filter((order) => order.status === "Pronto")
+          .slice(0, 5)
+      );
     } catch (error) {
       console.error("Erro ao carregar pedidos:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateOrderLists = (order) => {
+    if (!order || !order.id || !order.status) {
+      console.error("Pedido inválido recebido:", order);
+      return;
+    }
+
+    setPendingOrders((prev) => {
+      if (order.status !== "Pronto" && order.status !== "Cancelado") {
+        return [order, ...prev.filter((o) => o.id !== order.id)].slice(0, 5);
+      }
+      return prev.filter((o) => o.id !== order.id);
+    });
+
+    setReadyOrders((prev) => {
+      if (order.status === "Pronto") {
+        return [order, ...prev.filter((o) => o.id !== order.id)].slice(0, 5);
+      }
+      return prev.filter((o) => o.id !== order.id);
+    });
   };
 
   useEffect(() => {
@@ -30,17 +59,20 @@ const OrderStatus = () => {
     socket.onopen = () => console.log("Conectado ao WebSocket");
     socket.onmessage = ({ data }) => {
       try {
-        const { event, order } = JSON.parse(data);
+        const parsedData = JSON.parse(data);
+        console.log("Dados recebidos:", parsedData);
+
+        const { event, data: order } = parsedData;
+
+        if (!event || !order) {
+          console.error("Evento ou pedido inválido recebido:", parsedData);
+          return;
+        }
 
         if (event === "orderCreated") {
-          setPendingOrders((prev) => [...prev, order].slice(-5));
+          setPendingOrders((prev) => [order, ...prev].slice(0, 5));
         } else if (event === "orderUpdated") {
-          if (order.status === "Pronto") {
-            setPendingOrders((prev) => prev.filter((o) => o.id !== order.id));
-            setReadyOrders((prev) => [order, ...prev].slice(0, 5));
-          } else {
-            setPendingOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)));
-          }
+          updateOrderLists(order);
         }
       } catch (err) {
         console.error("Erro ao processar mensagem do WebSocket:", err);
@@ -52,52 +84,148 @@ const OrderStatus = () => {
     return () => socket.close();
   }, []);
 
+  const renderDrinks = (drinks) => {
+    return drinks.map((drink, index) => (
+      <div key={index} style={styles.drinkItem}>
+        <strong>{drink.quantity}x</strong> {drink.name}
+      </div>
+    ));
+  };
+
   const renderOrder = (order) => (
-    <li key={order.id} style={{ marginBottom: "15px" }}>
-      <div>
-        <strong>Bebida:</strong> {order.drink}
-      </div>
-      <div>
-        <strong>Status:</strong> {order.status}
-      </div>
-      {order.photo && (
-        <div>
-          <strong>Foto:</strong>
-          <br />
-          <img
-            src={order.photo}
-            alt="Foto do cliente"
-            style={{ width: "100px", height: "100px", objectFit: "cover" }}
-          />
+    <div
+      key={order.id}
+      style={{
+        ...styles.card,
+        backgroundColor: getBackgroundColor(order.status), // Cor de fundo baseada no status
+      }}
+    >
+      <div style={styles.cardContent}>
+        {/* Foto à esquerda */}
+        {order.photo && (
+          <div style={styles.photoContainer}>
+            <img
+              src={order.photo}
+              alt="Foto do cliente"
+              style={styles.photo}
+            />
+          </div>
+        )}
+  
+        {/* Detalhes do pedido à direita */}
+        <div style={styles.orderDetails}>
+          <div>
+            <strong>Bebidas:</strong>
+            {renderDrinks(order.drinks)}
+          </div>
+          <div style={{ marginTop: "10px" }}>
+            <strong>Status:</strong>
+            <span style={{ ...styles.status, backgroundColor: getStatusColor(order.status) }}>
+              {order.status}
+            </span>
+          </div>
         </div>
-      )}
-    </li>
+      </div>
+    </div>
   );
+  
+  const getBackgroundColor = (status) => {
+    switch (status) {
+      case "Pronto":
+        return "#d4f8d4"; // Verde claro
+      case "Cancelado":
+        return "#f8d4d4"; // Vermelho claro (opcional, pode ser mantido sem cor especial)
+      default:
+        return "#f0f0f0"; // Cinza claro para pendentes
+    }
+  };
+  
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Pronto":
+        return "green";
+      case "Cancelado":
+        return "red";
+      default:
+        return "gray";
+    }
+  };
 
   if (loading) {
     return <p>Carregando pedidos...</p>;
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "20px" }}>
-      <div style={{ flex: 1, marginRight: "20px" }}>
+    <div style={styles.container}>
+      <div style={styles.column}>
         <h2>Fila de Pedidos Pendentes</h2>
         {pendingOrders.length === 0 ? (
           <p>Sem pedidos pendentes no momento.</p>
         ) : (
-          <ul>{pendingOrders.map(renderOrder)}</ul>
+          <div>{pendingOrders.map(renderOrder)}</div>
         )}
       </div>
-      <div style={{ flex: 1, marginLeft: "20px" }}>
+      <div style={styles.column}>
         <h2>Pedidos Prontos</h2>
         {readyOrders.length === 0 ? (
           <p>Sem pedidos prontos no momento.</p>
         ) : (
-          <ul>{readyOrders.map(renderOrder)}</ul>
+          <div>{readyOrders.map(renderOrder)}</div>
         )}
       </div>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    display: "flex",
+    justifyContent: "space-between",
+    padding: "20px",
+    flexWrap: "wrap",
+  },
+  column: {
+    flex: 1,
+    marginRight: "20px",
+    marginBottom: "20px",
+  },
+  card: {
+    padding: "15px",
+    borderRadius: "10px",
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+    marginBottom: "15px",
+    transition: "transform 0.3s",
+  },
+  cardContent: {
+    display: "flex",
+    alignItems: "center",
+  },
+  photoContainer: {
+    marginRight: "20px",
+  },
+  photo: {
+    width: "120px",
+    height: "120px",
+    objectFit: "cover",
+    borderRadius: "10px",
+    border: "2px solid #ccc",
+  },
+  orderDetails: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+  },
+  drinkItem: {
+    marginBottom: "5px",
+    fontSize: "14px",
+  },
+  status: {
+    padding: "5px 10px",
+    borderRadius: "5px",
+    color: "#fff",
+    fontWeight: "bold",
+  },
 };
 
 export default OrderStatus;

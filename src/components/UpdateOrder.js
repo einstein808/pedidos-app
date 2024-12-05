@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 
 const UpdateOrder = () => {
   const [orders, setOrders] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState("Pendente");
   const [webSocket, setWebSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
+      setLoading(true);
       try {
         const response = await fetch("http://localhost:4000/orders");
         if (!response.ok) {
@@ -18,13 +21,15 @@ const UpdateOrder = () => {
       } catch (err) {
         console.error(err);
         setError("Não foi possível carregar os pedidos. Tente novamente mais tarde.");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchOrders();
 
     const connectWebSocket = () => {
-      if (webSocket) return; // Evita múltiplas conexões
+      if (webSocket || isConnected) return;
 
       const ws = new WebSocket("ws://localhost:4000");
 
@@ -53,10 +58,9 @@ const UpdateOrder = () => {
       };
 
       ws.onclose = () => {
-        console.log("Conexão WebSocket fechada. Tentando reconectar...");
-        setWebSocket(null); // Garante que uma nova conexão será criada
+        console.log("Conexão WebSocket fechada.");
+        setWebSocket(null);
         setIsConnected(false);
-        setTimeout(connectWebSocket, 5000); // Tentativa de reconexão
       };
 
       ws.onerror = (err) => {
@@ -64,7 +68,7 @@ const UpdateOrder = () => {
       };
     };
 
-    if (!isConnected) {
+    if (!isConnected && !webSocket) {
       connectWebSocket();
     }
 
@@ -73,7 +77,7 @@ const UpdateOrder = () => {
         webSocket.close();
       }
     };
-  }, [isConnected]);
+  }, [webSocket, isConnected]);
 
   const updateOrderStatus = async (id, status) => {
     try {
@@ -96,59 +100,162 @@ const UpdateOrder = () => {
     }
   };
 
+  const filteredOrders = orders.filter((order) => order.status === selectedStatus);
+
   return (
-    <div>
+    <div style={{ padding: "20px" }}>
       <h2>Atualizar Pedidos</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {orders.length === 0 && !error ? (
+      {error && <p style={{ color: "red", fontWeight: "bold" }}>{error}</p>}
+
+      {/* Navbar de status */}
+      <div style={{ marginBottom: "20px" }}>
+        <button
+          onClick={() => setSelectedStatus("Pendente")}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: selectedStatus === "Pendente" ? "#5bc0de" : "#ccc",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            marginRight: "10px",
+            cursor: "pointer",
+          }}
+        >
+          Pendente
+        </button>
+        <button
+          onClick={() => setSelectedStatus("Pronto")}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: selectedStatus === "Pronto" ? "#5bc0de" : "#ccc",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            marginRight: "10px",
+            cursor: "pointer",
+          }}
+        >
+          Pronto
+        </button>
+        <button
+          onClick={() => setSelectedStatus("Cancelado")}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: selectedStatus === "Cancelado" ? "#d9534f" : "#ccc",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          Cancelado
+        </button>
+      </div>
+
+      {loading ? (
         <p>Carregando pedidos...</p>
       ) : (
-        <ul>
-          {orders.map((order) => (
-            <li
-              key={order.id}
-              style={{
-                marginBottom: "20px",
-                border: "1px solid #ccc",
-                padding: "10px",
-              }}
-            >
-              <p>
-                <strong>ID:</strong> {order.id}
-              </p>
-              <p>
-                <strong>Status:</strong> {order.status}
-              </p>
-              <p>
-                <strong>Bebidas:</strong>{" "}
-                {order.drinks.map((drink) => (
-                  <span key={drink.id}>
-                    {drink.quantity}x {drink.name}{" "}
-                  </span>
-                ))}
-              </p>
-              {order.photo && (
-                <div>
-                  <p>
-                    <strong>Foto do cliente:</strong>
-                  </p>
-                  <img src={order.photo} alt="Cliente" width="100" />
-                </div>
-              )}
-              <div>
-                <button onClick={() => updateOrderStatus(order.id, "Pendente")}>
-                  Pendente
-                </button>
-                <button onClick={() => updateOrderStatus(order.id, "Pronto")}>
-                  Pronto
-                </button>
-                <button onClick={() => updateOrderStatus(order.id, "Cancelado")}>
-                  Cancelado
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          {filteredOrders.length === 0 ? (
+            <p>Nenhum pedido encontrado no status "{selectedStatus}".</p>
+          ) : (
+            <ul style={{ listStyleType: "none", padding: 0 }}>
+              {filteredOrders.map((order) => (
+                <li
+                  key={order.id}
+                  style={{
+                    marginBottom: "15px",
+                    border: "1px solid #ddd",
+                    borderRadius: "8px",
+                    padding: "15px",
+                    backgroundColor: "#fff",
+                    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    {order.photo && (
+                      <img
+                        src={order.photo}
+                        alt="Foto do cliente"
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          marginRight: "15px",
+                        }}
+                      />
+                    )}
+                    <div>
+                      <div style={{ marginBottom: "10px" }}>
+                        <strong>ID:</strong> {order.id}
+                      </div>
+                      <div style={{ marginBottom: "10px" }}>
+                        <strong>Status:</strong> {order.status}
+                      </div>
+                      <div style={{ marginBottom: "10px", padding: "10px", backgroundColor: "#f0f8ff", borderRadius: "5px" }}>
+                        <strong>Bebidas:</strong>{" "}
+                        {order.drinks.map((drink) => (
+                          <span key={drink.id} style={{ display: "block", marginBottom: "5px" }}>
+                            <span style={{ fontWeight: "bold" }}>{drink.quantity}x</span> {drink.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ marginBottom: "10px" }}>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "Pendente")}
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor: "#f0ad4e",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          marginBottom: "5px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Pendente
+                      </button>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "Pronto")}
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor: "#5bc0de",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          marginBottom: "5px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Pronto
+                      </button>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "Cancelado")}
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor: "#d9534f",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancelado
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );
