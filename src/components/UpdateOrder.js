@@ -31,7 +31,7 @@ const UpdateOrder = () => {
     const connectWebSocket = () => {
       if (webSocket || isConnected) return;
 
-      const ws = new WebSocket("ws://backend.gamaro.me/");
+      const ws = new WebSocket("wss://backend.gamaro.me/");
 
       ws.onopen = () => {
         console.log("Conexão WebSocket estabelecida");
