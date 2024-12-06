@@ -7,7 +7,7 @@ const OrderStatus = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("http://gamaro.me:4000/orders");
+      const response = await fetch("https://backend.gamaro.me/orders");
       if (!response.ok) throw new Error("Erro ao carregar pedidos");
 
       const data = await response.json();

@@ -8,7 +8,7 @@ const ManageDrinks = () => {
   // Buscar drinks ativos
   const fetchActiveDrinks = async () => {
     try {
-      const response = await axios.get("http://gamaro.me:4000/drinks/ativos");
+      const response = await axios.get("https://backend.gamaro.me/drinks/ativos");
       setActiveDrinks(response.data);
     } catch (error) {
       console.error("Erro ao buscar drinks ativos:", error);
@@ -18,7 +18,7 @@ const ManageDrinks = () => {
   // Buscar drinks inativos
   const fetchInactiveDrinks = async () => {
     try {
-      const response = await axios.get("http://gamaro.me:4000/drinks/inativos");
+      const response = await axios.get("https://backend.gamaro.me/drinks/inativos");
       setInactiveDrinks(response.data);
     } catch (error) {
       console.error("Erro ao buscar drinks inativos:", error);
@@ -28,7 +28,7 @@ const ManageDrinks = () => {
   // Alterar status de ativo/inativo
   const toggleActiveStatus = async (id, status) => {
     try {
-      await axios.put(`http://gamaro.me:4000/drinks/${id}/status`, { status });
+      await axios.put(`https://backend.gamaro.me/drinks/${id}/status`, { status });
       fetchActiveDrinks();
       fetchInactiveDrinks();
     } catch (error) {
@@ -40,7 +40,7 @@ const ManageDrinks = () => {
   // Excluir um drink
   const deleteDrink = async (id) => {
     try {
-      await axios.delete(`http://gamaro.me:4000/drinks/${id}`);
+      await axios.delete(`https://backend.gamaro.me/drinks/${id}`);
       fetchActiveDrinks();
       fetchInactiveDrinks();
     } catch (error) {
