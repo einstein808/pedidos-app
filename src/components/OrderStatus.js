@@ -7,7 +7,7 @@ const OrderStatus = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("http://localhost:4000/orders");
+      const response = await fetch("http://gamaro.me:4000/orders");
       if (!response.ok) throw new Error("Erro ao carregar pedidos");
 
       const data = await response.json();
@@ -54,7 +54,7 @@ const OrderStatus = () => {
   useEffect(() => {
     fetchOrders();
 
-    const socket = new WebSocket("ws://localhost:4000");
+    const socket = new WebSocket("ws://gamaro.me:4000");
 
     socket.onopen = () => console.log("Conectado ao WebSocket");
     socket.onmessage = ({ data }) => {

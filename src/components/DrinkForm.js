@@ -25,7 +25,7 @@ const DrinkForm = () => {
 
     try {
       // Envia o drink para o backend
-      const response = await fetch("http://localhost:4000/drinks", {
+      const response = await fetch("http://gamaro.me:4000/drinks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
