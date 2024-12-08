@@ -54,7 +54,7 @@ const OrderStatus = () => {
   useEffect(() => {
     fetchOrders();
 
-    const socket = new WebSocket("ws://23.88.109.93:4000");
+    const socket = new WebSocket("wss://backend.gamaro.me");
 
     socket.onopen = () => console.log("Conectado ao WebSocket");
     socket.onmessage = ({ data }) => {
