@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import "./OrderStatus.css";
 
 const OrderStatus = () => {
   const [pendingOrders, setPendingOrders] = useState([]);
   const [readyOrders, setReadyOrders] = useState([]);
+  const [highlightedOrderId, setHighlightedOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
@@ -45,10 +47,14 @@ const OrderStatus = () => {
 
     setReadyOrders((prev) => {
       if (order.status === "Pronto") {
+        setHighlightedOrderId(order.id); // Destaca o pedido pronto
         return [order, ...prev.filter((o) => o.id !== order.id)].slice(0, 5);
       }
       return prev.filter((o) => o.id !== order.id);
     });
+
+    // Remove destaque após 5 segundos
+    setTimeout(() => setHighlightedOrderId(null), 5000);
   };
 
   useEffect(() => {
@@ -60,14 +66,9 @@ const OrderStatus = () => {
     socket.onmessage = ({ data }) => {
       try {
         const parsedData = JSON.parse(data);
-        console.log("Dados recebidos:", parsedData);
-
         const { event, data: order } = parsedData;
 
-        if (!event || !order) {
-          console.error("Evento ou pedido inválido recebido:", parsedData);
-          return;
-        }
+        if (!event || !order) return;
 
         if (event === "orderCreated") {
           setPendingOrders((prev) => [order, ...prev].slice(0, 5));
@@ -78,154 +79,52 @@ const OrderStatus = () => {
         console.error("Erro ao processar mensagem do WebSocket:", err);
       }
     };
+
     socket.onerror = (err) => console.error("Erro no WebSocket:", err);
     socket.onclose = () => console.log("Conexão WebSocket encerrada");
 
     return () => socket.close();
   }, []);
 
-  const renderDrinks = (drinks) => {
-    return drinks.map((drink, index) => (
-      <div key={index} style={styles.drinkItem}>
-        <strong>{drink.quantity}x</strong> {drink.name}
-      </div>
-    ));
-  };
-
   const renderOrder = (order) => (
     <div
       key={order.id}
-      style={{
-        ...styles.card,
-        backgroundColor: getBackgroundColor(order.status), // Cor de fundo baseada no status
-      }}
+      className={`order-card ${highlightedOrderId === order.id ? "highlight" : order.status.toLowerCase()}`}
     >
-      <div style={styles.cardContent}>
-        {/* Foto à esquerda */}
+      <div className="order-content">
         {order.photo && (
-          <div style={styles.photoContainer}>
-            <img
-              src={order.photo}
-              alt="Foto do cliente"
-              style={styles.photo}
-            />
+          <div className="order-photo">
+            <img src={order.photo} alt="Foto do pedido" />
           </div>
         )}
-  
-        {/* Detalhes do pedido à direita */}
-        <div style={styles.orderDetails}>
-          <div>
-            <strong>Bebidas:</strong>
-            {renderDrinks(order.drinks)}
-          </div>
-          <div style={{ marginTop: "10px" }}>
-            <strong>Status:</strong>
-            <span style={{ ...styles.status, backgroundColor: getStatusColor(order.status) }}>
-              {order.status}
-            </span>
-          </div>
+        <div className="order-details">
+          <strong>Bebidas:</strong>
+          <div>{order.drinks.map((d) => `${d.quantity}x ${d.name}`).join(", ")}</div>
+          <strong>Status:</strong>
+          <span className={`order-status ${order.status.toLowerCase()}`}>
+            {order.status}
+          </span>
         </div>
       </div>
     </div>
   );
-  
-  const getBackgroundColor = (status) => {
-    switch (status) {
-      case "Pronto":
-        return "#d4f8d4"; // Verde claro
-      case "Cancelado":
-        return "#f8d4d4"; // Vermelho claro (opcional, pode ser mantido sem cor especial)
-      default:
-        return "#f0f0f0"; // Cinza claro para pendentes
-    }
-  };
-  
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Pronto":
-        return "green";
-      case "Cancelado":
-        return "red";
-      default:
-        return "gray";
-    }
-  };
 
   if (loading) {
     return <p>Carregando pedidos...</p>;
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.column}>
-        <h2>Fila de Pedidos Pendentes</h2>
-        {pendingOrders.length === 0 ? (
-          <p>Sem pedidos pendentes no momento.</p>
-        ) : (
-          <div>{pendingOrders.map(renderOrder)}</div>
-        )}
+    <div className="order-container">
+      <div className="order-column">
+        <h2>Pedidos Pendentes</h2>
+        {pendingOrders.map(renderOrder)}
       </div>
-      <div style={styles.column}>
+      <div className="order-column">
         <h2>Pedidos Prontos</h2>
-        {readyOrders.length === 0 ? (
-          <p>Sem pedidos prontos no momento.</p>
-        ) : (
-          <div>{readyOrders.map(renderOrder)}</div>
-        )}
+        {readyOrders.map(renderOrder)}
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "20px",
-    flexWrap: "wrap",
-  },
-  column: {
-    flex: 1,
-    marginRight: "20px",
-    marginBottom: "20px",
-  },
-  card: {
-    padding: "15px",
-    borderRadius: "10px",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-    marginBottom: "15px",
-    transition: "transform 0.3s",
-  },
-  cardContent: {
-    display: "flex",
-    alignItems: "center",
-  },
-  photoContainer: {
-    marginRight: "20px",
-  },
-  photo: {
-    width: "120px",
-    height: "120px",
-    objectFit: "cover",
-    borderRadius: "10px",
-    border: "2px solid #ccc",
-  },
-  orderDetails: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-  },
-  drinkItem: {
-    marginBottom: "5px",
-    fontSize: "14px",
-  },
-  status: {
-    padding: "5px 10px",
-    borderRadius: "5px",
-    color: "#fff",
-    fontWeight: "bold",
-  },
 };
 
 export default OrderStatus;

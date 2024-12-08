@@ -1,0 +1,75 @@
+/* Estilos gerais */
+.order-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .order-column {
+    flex: 1 1 48%;
+  }
+  
+  .order-card {
+    background-color: #f0f0f0;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    transition: transform 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .order-content {
+    display: flex;
+    align-items: center;
+  }
+  
+  .order-photo img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-right: 15px;
+  }
+  
+  .order-details {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .order-status {
+    padding: 5px;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
+  }
+  
+  /* Fundo de status */
+  .order-card.pronto {
+    background-color: #d4f8d4; /* Fundo verde claro */
+  }
+  
+  .order-card.cancelado {
+    background-color: #f8d4d4; /* Fundo vermelho claro */
+  }
+  
+  .order-card.pendente {
+    background-color: #f0f0f0; /* Fundo cinza claro */
+  }
+  
+  /* Destaque para pedidos prontos */
+  .highlight {
+    animation: blink 1.5s infinite;
+    background-color: red !important; /* Torna o fundo vermelho temporariamente */
+  }
+  
+  @keyframes blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
