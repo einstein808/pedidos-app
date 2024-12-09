@@ -9,8 +9,8 @@ const OrderForm = () => {
   const [photo, setPhoto] = useState(null);
   const [name, setName] = useState("");
   const [orderType, setOrderType] = useState("nome");
+  const [showFinalizeButton, setShowFinalizeButton] = useState(true); // Controle do botão
   const webcamRef = useRef(null);
-  const [finalizingPhoto, setFinalizingPhoto] = useState(false);
 
   useEffect(() => {
     const fetchDrinks = async () => {
@@ -57,25 +57,17 @@ const OrderForm = () => {
     );
   };
 
-  const handleFinalizeOrder = () => {
-    if (orderType === "foto") {
-      setCameraVisible(true);
-    } else {
-      submitOrder();
-    }
-  };
-
-  const capture = () => {
+  const capture = async () => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       setPhoto(imageSrc);
-      setFinalizingPhoto(true);
-      setCameraVisible(false);
-      submitOrder(); // Envia o pedido automaticamente após a captura da foto
+      setCameraVisible(false); // Ocultar câmera após captura
+      setShowFinalizeButton(false); // Esconde o botão "Finalizar Pedido" após captura
+      await submitOrder(imageSrc); // Envia o pedido automaticamente
     }
   };
 
-  const submitOrder = async () => {
+  const submitOrder = async (capturedPhoto) => {
     if (orderType === "nome" && !name) {
       alert("Por favor, preencha o nome do cliente.");
       return;
@@ -93,7 +85,7 @@ const OrderForm = () => {
         name: d.name,
         quantity: d.quantity,
       })),
-      photo: photo || null,
+      photo: capturedPhoto || photo || null,
     };
 
     try {
@@ -113,7 +105,7 @@ const OrderForm = () => {
       setSelectedDrinks([]);
       setPhoto(null);
       setName("");
-      setFinalizingPhoto(false);
+      setShowFinalizeButton(true); // Reexibe o botão após o envio
     } catch (error) {
       console.error("Erro ao enviar o pedido:", error);
       alert("Erro ao enviar o pedido.");
@@ -158,16 +150,13 @@ const OrderForm = () => {
         </div>
       )}
 
-      {finalizingPhoto && photo && (
+      {photo && !cameraVisible && (
         <div className="photo-preview">
           <img src={photo} alt="Preview da Foto" className="photo-image" />
-          <button onClick={submitOrder} className="finalize-button">
-            Finalizar Pedido
-          </button>
         </div>
       )}
 
-      {!cameraVisible && !finalizingPhoto && (
+      {!cameraVisible && (
         <div className="drink-list">
           {drinks.map((drink) => (
             <div key={drink.id} className="drink-item">
@@ -177,7 +166,7 @@ const OrderForm = () => {
                 className="drink-image"
               />
               <h3 className="drink-name">{drink.name}</h3>
-              <p className="drink-ingredients">{drink.ingredients}</p> {/* Exibindo os ingredientes */}
+              <p className="drink-ingredients">{drink.ingredients}</p>
               <button onClick={() => addDrink(drink.id)} className="add-drink-button">
                 Adicionar
               </button>
@@ -214,13 +203,21 @@ const OrderForm = () => {
               </button>
             </div>
           ))}
-          <button
-            onClick={handleFinalizeOrder}
-            className="finalize-order-button"
-            disabled={!selectedDrinks.length}
-          >
-            Finalizar Pedido
-          </button>
+          {showFinalizeButton && (
+            <button
+              onClick={() => {
+                if (orderType === "foto") {
+                  setCameraVisible(true); // Exibe a câmera para capturar a foto
+                } else {
+                  submitOrder(); // Finaliza o pedido sem foto
+                }
+              }}
+              className="finalize-order-button"
+              disabled={!selectedDrinks.length}
+            >
+              Finalizar Pedido
+            </button>
+          )}
         </div>
       </div>
     </div>
