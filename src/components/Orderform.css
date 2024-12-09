@@ -1,0 +1,246 @@
+.order-form {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: auto;
+  }
+  
+  .order-title {
+    text-align: center;
+    color: #333;
+    margin-bottom: 1rem;
+  }
+  
+  .order-type {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  
+  .order-type-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .order-type-button.active {
+    background-color: #0056b3;
+  }
+  
+  .order-type-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .client-name {
+    margin-bottom: 1rem;
+  }
+  
+  .input-text {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+  }
+  
+  .camera {
+    text-align: center;
+  }
+  
+  .capture-button {
+    margin-top: 1rem;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .capture-button:hover {
+    background-color: #218838;
+  }
+  
+  .photo-preview {
+    text-align: center;
+    margin: 2rem 0;
+  }
+  
+  .photo-image {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+  
+  .finalize-button {
+    margin-top: 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .finalize-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .drink-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  
+  .drink-item {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 220px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    padding: 1rem;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .drink-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .drink-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+  }
+  
+  .no-photo-placeholder {
+    width: 100%;
+    height: 150px;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    color: #555;
+    font-size: 1rem;
+    text-align: center;
+  }
+  
+  .drink-name {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+  
+  .add-drink-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s;
+  }
+  
+  .add-drink-button:hover {
+    background-color: #218838;
+  }
+  
+  .selected-drinks {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .selected-drinks-card {
+    margin-bottom: 1rem;
+  }
+  
+  .selected-drink-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .selected-drink-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .selected-drink-name {
+    font-weight: bold;
+    margin-right: 1rem;
+  }
+  
+  .quantity-controls {
+    display: flex;
+    align-items: center;
+  }
+  
+  .quantity-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 0 0.5rem;
+  }
+  
+  .quantity-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .quantity-number {
+    font-size: 1rem;
+    margin: 0 0.5rem;
+  }
+  
+  .remove-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .remove-button:hover {
+    background-color: #c82333;
+  }
+  
+  .finalize-order-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s;
+  }
+  
+  .finalize-order-button:hover {
+    background-color: #218838;
+  }
+  

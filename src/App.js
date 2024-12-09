@@ -8,6 +8,7 @@ import UpdateOrder from './components/UpdateOrder';
 import DrinkForm from './components/DrinkForm';
 import ManageDrinks from './components/ManageDrinks';
 import Hub from './components/Hub';
+import CapturePhoto from './components/CapturePhoto'
 
 function App() {
   return (
@@ -16,9 +17,10 @@ function App() {
         <Route path="/make-order" element={<OrderForm />} />
         <Route path="/order-status" element={<OrderStatus />} />
         <Route path="/update-order" element={<UpdateOrder />} />
-        <Route path="/drinks" element={<ManageDrinks/>} />
-        <Route path="/create-drink" element={<DrinkForm/>} />
-        <Route path="/" element={<Hub/>} />
+        <Route path="/drinks" element={<ManageDrinks />} />
+        <Route path="/create-drink" element={<DrinkForm />} />
+        <Route path="/capture-photo" element={<CapturePhoto />} />
+        <Route path="/" element={<Hub />} />
       </Routes>
     </Router>
   );

@@ -5,24 +5,33 @@ const { broadcast } = require("../websockets/websocket");
 const router = express.Router();
 
 router.post("/", (req, res) => {
-  const { drinks, photo } = req.body;
+  const { drinks, photo, name } = req.body;
 
-  if (!drinks || !photo) {
-    return res.status(400).json({ message: "Drinks e foto são obrigatórios." });
+  if (!drinks || (!photo && !name)) {
+    return res
+      .status(400)
+      .json({ message: "Drinks e pelo menos um identificador (nome ou foto) são obrigatórios." });
   }
 
-  const newOrder = { drinks: JSON.stringify(drinks), photo, status: "Pendente" };
+  const newOrder = {
+    drinks: JSON.stringify(drinks),
+    photo: photo || null,
+    name: name || null,
+    status: "Pendente",
+  };
 
-  db.run("INSERT INTO orders (drinks, photo, status) VALUES (?, ?, ?)", [newOrder.drinks, photo, "Pendente"], function (err) {
-    if (err) {
-      return res.status(500).json({ message: "Erro ao salvar pedido no banco de dados." });
+  db.run(
+    "INSERT INTO orders (drinks, photo, name, status) VALUES (?, ?, ?, ?)",
+    [newOrder.drinks, newOrder.photo, newOrder.name, "Pendente"],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ message: "Erro ao salvar pedido no banco de dados." });
+      }
+      res.status(201).json({ id: this.lastID, ...newOrder });
     }
-
-    const order = { id: this.lastID, ...newOrder, drinks };
-    broadcast("orderCreated", order);
-    res.status(201).json(order);
-  });
+  );
 });
+
 
 router.get("/", (req, res) => {
     db.all("SELECT * FROM orders", [], (err, rows) => {

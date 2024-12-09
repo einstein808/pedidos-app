@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import Webcam from "react-webcam";
+import "./Orderform.css";
 
 const OrderForm = () => {
   const [drinks, setDrinks] = useState([]);
   const [selectedDrinks, setSelectedDrinks] = useState([]);
   const [cameraVisible, setCameraVisible] = useState(false);
   const [photo, setPhoto] = useState(null);
+  const [name, setName] = useState("");
+  const [orderType, setOrderType] = useState("nome");
   const webcamRef = useRef(null);
-  const [loading, setLoading] = useState(false);
+  const [finalizingPhoto, setFinalizingPhoto] = useState(false);
 
   useEffect(() => {
     const fetchDrinks = async () => {
@@ -42,51 +45,60 @@ const OrderForm = () => {
     }
   };
 
-  const removeDrinkQuantity = (drinkId) => {
-    setSelectedDrinks((prev) =>
-      prev
-        .map((d) =>
-          d.id === drinkId ? { ...d, quantity: d.quantity - 1 } : d
-        )
-        .filter((d) => d.quantity > 0)
-    );
-  };
-
   const removeDrink = (drinkId) => {
     setSelectedDrinks((prev) => prev.filter((d) => d.id !== drinkId));
   };
 
-  const capture = async () => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      setPhoto(imageSrc);
+  const updateDrinkQuantity = (drinkId, quantity) => {
+    setSelectedDrinks((prev) =>
+      prev.map((d) =>
+        d.id === drinkId ? { ...d, quantity: Math.max(1, quantity) } : d
+      )
+    );
+  };
 
-      // Automatiza o envio do pedido
-      await handleSubmit(imageSrc);
+  const handleFinalizeOrder = () => {
+    if (orderType === "foto") {
+      setCameraVisible(true);
     } else {
-      alert("Câmera não está disponível.");
+      submitOrder();
     }
   };
 
-  const handleSubmit = async (capturedPhoto) => {
-    if (!selectedDrinks.length || !capturedPhoto) {
-      alert("Por favor, selecione drinks e capture uma foto.");
+  const capture = () => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      setPhoto(imageSrc);
+      setFinalizingPhoto(true);
+      setCameraVisible(false);
+      submitOrder(); // Chama a função para enviar o pedido imediatamente
+    }
+  };
+  
+
+  const submitOrder = async () => {
+    if (orderType === "nome" && !name) {
+      alert("Por favor, preencha o nome do cliente.");
+      return;
+    }
+
+    if (!selectedDrinks.length) {
+      alert("Por favor, selecione pelo menos um drink.");
       return;
     }
 
     const newOrder = {
+      name: orderType === "nome" ? name : null,
       drinks: selectedDrinks.map((d) => ({
         id: d.id,
         name: d.name,
         quantity: d.quantity,
       })),
-      photo: capturedPhoto,
+      photo: photo || null,
     };
 
-    setLoading(true);
-
     try {
-      const response = await fetch("https://backend.gamaro.me/orders", {
+      const response = await fetch("http://localhost:4000/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -94,204 +106,124 @@ const OrderForm = () => {
         body: JSON.stringify(newOrder),
       });
 
-      if (response.ok) {
-        alert("Pedido enviado com sucesso!");
-        setSelectedDrinks([]);
-        setPhoto(null);
-        setCameraVisible(false);
-      } else {
-        const errorData = await response.json();
-        alert(`Erro ao enviar pedido: ${errorData.message || "Erro desconhecido"}`);
+      if (!response.ok) {
+        throw new Error(`Erro: ${response.statusText}`);
       }
+
+      alert("Pedido enviado com sucesso!");
+      setSelectedDrinks([]);
+      setPhoto(null);
+      setName("");
+      setFinalizingPhoto(false);
     } catch (error) {
-      alert("Erro na requisição: " + error.message);
-    } finally {
-      setLoading(false);
+      console.error("Erro ao enviar o pedido:", error);
+      alert("Erro ao enviar o pedido.");
     }
   };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
-      <h2 style={{ color: "#007BFF", textAlign: "center" }}>Criar Pedido</h2>
-
-      {/* Seleção de Drinks */}
-      {!cameraVisible && (
-        <div>
-          <h3>Escolha seus Drinks</h3>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "20px",
-              justifyContent: "center",
-            }}
-          >
-            {drinks.map((drink) => (
-              <div
-                key={drink.id}
-                style={{
-                  border: "1px solid #ddd",
-                  borderRadius: "10px",
-                  padding: "10px",
-                  width: "200px",
-                  textAlign: "center",
-                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                }}
-              >
-                <img
-                  src={drink.photo}
-                  alt={drink.name}
-                  style={{
-                    width: "100%",
-                    height: "150px",
-                    objectFit: "cover",
-                    borderRadius: "10px",
-                  }}
-                />
-                <h4>{drink.name}</h4>
-                <p>{drink.ingredients}</p>
-                <button
-                  onClick={() => addDrink(drink.id)}
-                  style={{
-                    backgroundColor: "#28a745",
-                    color: "white",
-                    border: "none",
-                    padding: "5px 10px",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Adicionar
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Resumo no canto inferior direito */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "20px",
-          right: "20px",
-          backgroundColor: "white",
-          border: "1px solid #ddd",
-          borderRadius: "10px",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-          padding: "20px",
-          width: "300px",
-        }}
-      >
-        <h3 style={{ color: "#007BFF" }}>Resumo do Pedido</h3>
-        <ul style={{ listStyleType: "none", padding: "0" }}>
-          {selectedDrinks.map((drink) => (
-            <li key={drink.id} style={{ marginBottom: "10px" }}>
-              {drink.quantity}x {drink.name}
-              <button
-                onClick={() => removeDrinkQuantity(drink.id)}
-                style={{
-                  marginLeft: "10px",
-                  backgroundColor: "#ffc107",
-                  color: "black",
-                  border: "none",
-                  padding: "5px 10px",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                -
-              </button>
-              <button
-                onClick={() => addDrink(drink.id)}
-                style={{
-                  marginLeft: "5px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  padding: "5px 10px",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                +
-              </button>
-              <button
-                onClick={() => removeDrink(drink.id)}
-                style={{
-                  marginLeft: "10px",
-                  backgroundColor: "#dc3545",
-                  color: "white",
-                  border: "none",
-                  padding: "5px 10px",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                Remover
-              </button>
-            </li>
-          ))}
-        </ul>
+    <div className="order-form">
+      <h1 className="order-title">Criar Pedido</h1>
+      <div className="order-type">
         <button
-          onClick={() => setCameraVisible(true)}
-          style={{
-            width: "100%",
-            marginTop: "10px",
-            padding: "10px",
-            backgroundColor: "#007BFF",
-            color: "white",
-            border: "none",
-            borderRadius: "10px",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
+          className={`order-type-button ${orderType === "nome" ? "active" : ""}`}
+          onClick={() => setOrderType("nome")}
         >
-          Finalizar Pedido
+          Pedido por Nome
+        </button>
+        <button
+          className={`order-type-button ${orderType === "foto" ? "active" : ""}`}
+          onClick={() => setOrderType("foto")}
+        >
+          Pedido por Foto
         </button>
       </div>
 
-      {/* Câmera */}
-      {cameraVisible && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100vh",
-          }}
-        >
-          <Webcam
-            audio={false}
-            ref={webcamRef}
-            screenshotFormat="image/jpeg"
-            style={{
-              width: "300px",
-              height: "300px",
-              borderRadius: "10px",
-              border: "2px solid #ccc",
-            }}
-            videoConstraints={{
-              facingMode: "user",
-            }}
+      {orderType === "nome" && (
+        <div className="client-name">
+          <label>Nome do Cliente:</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input-text"
           />
-          <button
-            onClick={capture}
-            style={{
-              marginTop: "20px",
-              padding: "10px 20px",
-              backgroundColor: "#007BFF",
-              color: "white",
-              border: "none",
-              borderRadius: "10px",
-              cursor: "pointer",
-            }}
-          >
-            Tirar Foto
+        </div>
+      )}
+
+      {orderType === "foto" && cameraVisible && (
+        <div className="camera">
+          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />
+          <button onClick={capture} className="capture-button">
+            Capturar Foto
           </button>
         </div>
       )}
+
+      {finalizingPhoto && photo && (
+        <div className="photo-preview">
+          <img src={photo} alt="Preview da Foto" className="photo-image" />
+          <button onClick={submitOrder} className="finalize-button">
+            Finalizar Pedido
+          </button>
+        </div>
+      )}
+
+      {!cameraVisible && !finalizingPhoto && (
+        <div className="drink-list">
+          {drinks.map((drink) => (
+            <div key={drink.id} className="drink-item">
+              {drink.photo ? (
+                <img src={drink.photo} alt={drink.name} className="drink-image" />
+              ) : (
+                <div className="no-photo-placeholder">Sem Foto</div>
+              )}
+              <p className="drink-name">{drink.name}</p>
+              <button onClick={() => addDrink(drink.id)} className="add-drink-button">
+                Adicionar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="selected-drinks">
+        <h3>Drinks Selecionados</h3>
+        <div className="selected-drinks-card">
+          {selectedDrinks.map((drink) => (
+            <div key={drink.id} className="selected-drink-item">
+              <div className="selected-drink-info">
+                <span className="selected-drink-name">{drink.name}</span>
+                <div className="quantity-controls">
+                  <button
+                    onClick={() => updateDrinkQuantity(drink.id, drink.quantity - 1)}
+                    className="quantity-button"
+                  >
+                    -
+                  </button>
+                  <span className="quantity-number">{drink.quantity}</span>
+                  <button
+                    onClick={() => updateDrinkQuantity(drink.id, drink.quantity + 1)}
+                    className="quantity-button"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <button onClick={() => removeDrink(drink.id)} className="remove-button">
+                Remover
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={handleFinalizeOrder}
+            className="finalize-order-button"
+            disabled={!selectedDrinks.length}
+          >
+            Finalizar Pedido
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
