@@ -71,10 +71,9 @@ const OrderForm = () => {
       setPhoto(imageSrc);
       setFinalizingPhoto(true);
       setCameraVisible(false);
-      submitOrder(); // Chama a função para enviar o pedido imediatamente
+      submitOrder(); // Envia o pedido automaticamente após a captura da foto
     }
   };
-  
 
   const submitOrder = async () => {
     if (orderType === "nome" && !name) {
@@ -123,16 +122,16 @@ const OrderForm = () => {
 
   return (
     <div className="order-form">
-      <h1 className="order-title">Criar Pedido</h1>
+      <h1>Criar Pedido</h1>
       <div className="order-type">
         <button
-          className={`order-type-button ${orderType === "nome" ? "active" : ""}`}
+          className={orderType === "nome" ? "active" : ""}
           onClick={() => setOrderType("nome")}
         >
           Pedido por Nome
         </button>
         <button
-          className={`order-type-button ${orderType === "foto" ? "active" : ""}`}
+          className={orderType === "foto" ? "active" : ""}
           onClick={() => setOrderType("foto")}
         >
           Pedido por Foto
@@ -146,7 +145,6 @@ const OrderForm = () => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="input-text"
           />
         </div>
       )}
@@ -173,12 +171,13 @@ const OrderForm = () => {
         <div className="drink-list">
           {drinks.map((drink) => (
             <div key={drink.id} className="drink-item">
-              {drink.photo ? (
-                <img src={drink.photo} alt={drink.name} className="drink-image" />
-              ) : (
-                <div className="no-photo-placeholder">Sem Foto</div>
-              )}
-              <p className="drink-name">{drink.name}</p>
+              <img
+                src={drink.photo || "caminho/para/imagem/placeholder.png"}
+                alt={drink.name}
+                className="drink-image"
+              />
+              <h3 className="drink-name">{drink.name}</h3>
+              <p className="drink-ingredients">{drink.ingredients}</p> {/* Exibindo os ingredientes */}
               <button onClick={() => addDrink(drink.id)} className="add-drink-button">
                 Adicionar
               </button>
