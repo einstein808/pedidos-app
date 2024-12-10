@@ -12,7 +12,7 @@ const UpdateOrder = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const response = await fetch("https://backend.gamaro.me/orders");
+        const response = await fetch("http://localhost:4000/orders/latest");
         if (!response.ok) {
           throw new Error("Erro ao buscar pedidos");
         }
@@ -31,7 +31,7 @@ const UpdateOrder = () => {
     const connectWebSocket = () => {
       if (webSocket || isConnected) return;
 
-      const ws = new WebSocket("wss://backend.gamaro.me/");
+      const ws = new WebSocket("ws://localhost:4000/");
 
       ws.onopen = () => {
         console.log("Conexão WebSocket estabelecida");
@@ -81,7 +81,7 @@ const UpdateOrder = () => {
 
   const updateOrderStatus = async (id, status) => {
     try {
-      const response = await fetch(`https://backend.gamaro.me/orders/${id}`, {
+      const response = await fetch(`http://localhost:4000/orders/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +176,8 @@ const UpdateOrder = () => {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    {order.photo && (
+                    {/* Exibe a foto se disponível, senão exibe o nome */}
+                    {order.photo ? (
                       <img
                         src={order.photo}
                         alt="Foto do cliente"
@@ -188,6 +189,20 @@ const UpdateOrder = () => {
                           marginRight: "15px",
                         }}
                       />
+                    ) : order.name ? (
+                      <div
+                        style={{
+                          backgroundColor: "white",
+                          padding: "15px 20px", // Aumenta o tamanho do quadrado
+                          borderRadius: "8px",
+                          boxShadow: "0 0 5px rgba(0, 0, 0, 0.1)", // Sombra opcional
+                          marginRight: "15px",
+                        }}
+                      >
+                        <strong>{order.name}</strong>
+                      </div>
+                    ) : (
+                      <div>Sem nome ou foto</div> // Caso não tenha nem nome nem foto
                     )}
                     <div>
                       <div style={{ marginBottom: "10px" }}>
@@ -196,7 +211,14 @@ const UpdateOrder = () => {
                       <div style={{ marginBottom: "10px" }}>
                         <strong>Status:</strong> {order.status}
                       </div>
-                      <div style={{ marginBottom: "10px", padding: "10px", backgroundColor: "#f0f8ff", borderRadius: "5px" }}>
+                      <div
+                        style={{
+                          marginBottom: "10px",
+                          padding: "10px",
+                          backgroundColor: "#f0f8ff",
+                          borderRadius: "5px",
+                        }}
+                      >
                         <strong>Bebidas:</strong>{" "}
                         {order.drinks.map((drink) => (
                           <span key={drink.id} style={{ display: "block", marginBottom: "5px" }}>

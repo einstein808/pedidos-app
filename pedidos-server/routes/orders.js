@@ -20,14 +20,34 @@ router.post("/", (req, res) => {
     status: "Pendente",
   };
 
-  db.run(
-    "INSERT INTO orders (drinks, photo, name, status) VALUES (?, ?, ?, ?)",
-    [newOrder.drinks, newOrder.photo, newOrder.name, "Pendente"],
+  // Insere o novo pedido no banco de dados
+  db.run("INSERT INTO orders (drinks, photo, name, status) VALUES (?, ?, ?, ?)", 
+    [newOrder.drinks, newOrder.photo, newOrder.name, newOrder.status], 
     function (err) {
       if (err) {
-        return res.status(500).json({ message: "Erro ao salvar pedido no banco de dados." });
+        console.error("Erro ao criar pedido:", err.message);
+        return res.status(500).json({ message: "Erro ao criar pedido." });
       }
-      res.status(201).json({ id: this.lastID, ...newOrder });
+
+      // Obtém o id do pedido criado
+      const orderId = this.lastID;
+
+      // Broadcasting the new order
+      broadcast("orderCreated", {
+        id: orderId,
+        drinks: JSON.parse(newOrder.drinks),
+        photo: newOrder.photo,
+        name: newOrder.name,
+        status: newOrder.status,
+      });
+
+      res.status(201).json({
+        id: orderId,
+        drinks: JSON.parse(newOrder.drinks),
+        photo: newOrder.photo,
+        name: newOrder.name,
+        status: newOrder.status,
+      });
     }
   );
 });
@@ -51,40 +71,81 @@ router.get("/", (req, res) => {
     });
   });
   
-router.put("/:id", (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  if (!status) {
-    return res.status(400).json({ message: "O status é obrigatório." });
-  }
-
-  db.run("UPDATE orders SET status = ? WHERE id = ?", [status, id], function (err) {
-    if (err) {
-      console.error("Erro ao atualizar o status do pedido:", err.message);
-      return res.status(500).json({ message: "Erro ao atualizar o status do pedido." });
+  router.put("/:id", (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+  
+    if (!status) {
+      return res.status(400).json({ message: "O status é obrigatório." });
     }
-
-    if (this.changes === 0) {
-      return res.status(404).json({ message: "Pedido não encontrado." });
-    }
-
+  
+    // Busca os dados atuais para garantir mesclagem
     db.get("SELECT * FROM orders WHERE id = ?", [id], (err, row) => {
       if (err) {
-        console.error("Erro ao buscar pedido atualizado:", err.message);
-        return res.status(500).json({ message: "Erro ao buscar pedido atualizado." });
+        console.error("Erro ao buscar pedido:", err.message);
+        return res.status(500).json({ message: "Erro ao buscar pedido." });
       }
-
+  
+      if (!row) {
+        return res.status(404).json({ message: "Pedido não encontrado." });
+      }
+  
+      // Mescla os dados existentes com as atualizações
       const updatedOrder = {
-        id: row.id,
-        drinks: JSON.parse(row.drinks),
-        photo: row.photo,
-        status: row.status,
+        ...row,
+        status, // Atualiza apenas o status
       };
-
-      broadcast("orderUpdated", updatedOrder);
-      res.json(updatedOrder);
+  
+      db.run(
+        "UPDATE orders SET status = ? WHERE id = ?",
+        [updatedOrder.status, id],
+        function (err) {
+          if (err) {
+            console.error("Erro ao atualizar pedido:", err.message);
+            return res.status(500).json({ message: "Erro ao atualizar pedido." });
+          }
+  
+          broadcast("orderUpdated", {
+            id: updatedOrder.id,
+            drinks: JSON.parse(updatedOrder.drinks),
+            photo: updatedOrder.photo,
+            name: updatedOrder.name,
+            status: updatedOrder.status,
+          });
+  
+          res.json({
+            id: updatedOrder.id,
+            drinks: JSON.parse(updatedOrder.drinks),
+            photo: updatedOrder.photo,
+            name: updatedOrder.name,
+            status: updatedOrder.status,
+          });
+        }
+      );
     });
+  });
+  
+router.get("/latest", (req, res) => {
+  // Consulta os últimos 20 pedidos ordenados por ID (do mais recente para o mais antigo)
+  const query = "SELECT * FROM orders ORDER BY id DESC LIMIT 20";
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error("Erro ao buscar os últimos pedidos:", err.message);
+      return res.status(500).json({ message: "Erro ao buscar os últimos pedidos." });
+    }
+
+    // Formata os resultados
+    const orders = rows.map((row) => ({
+      id: row.id,
+      drinks: JSON.parse(row.drinks),
+      photo: row.photo,
+      name: row.name,
+      status: row.status,
+    }));
+
+    // Retorna os pedidos em ordem cronológica (mais antigo primeiro)
+    res.json(orders.reverse());
   });
 });
 

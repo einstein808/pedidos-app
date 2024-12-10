@@ -9,7 +9,7 @@ const OrderStatus = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("https://backend.gamaro.me/orders");
+      const response = await fetch("http://localhost:4000/orders/latest");
       if (!response.ok) throw new Error("Erro ao carregar pedidos");
 
       const data = await response.json();
@@ -32,25 +32,38 @@ const OrderStatus = () => {
     }
   };
 
-  const updateOrderLists = (order) => {
-    if (!order || !order.id || !order.status) {
-      console.error("Pedido inválido recebido:", order);
+  const mergeOrderData = (existingOrder, updatedOrder) => ({
+    ...existingOrder,
+    ...updatedOrder,
+    photo: updatedOrder.photo ?? existingOrder.photo,
+    name: updatedOrder.name ?? existingOrder.name,
+  });
+
+  const updateOrderLists = (updatedOrder) => {
+    if (!updatedOrder || !updatedOrder.id || !updatedOrder.status) {
+      console.error("Pedido inválido recebido:", updatedOrder);
       return;
     }
 
     setPendingOrders((prev) => {
-      if (order.status !== "Pronto" && order.status !== "Cancelado") {
-        return [order, ...prev.filter((o) => o.id !== order.id)].slice(0, 5);
+      const existingOrder = prev.find((o) => o.id === updatedOrder.id);
+      const mergedOrder = existingOrder ? mergeOrderData(existingOrder, updatedOrder) : updatedOrder;
+
+      if (updatedOrder.status !== "Pronto" && updatedOrder.status !== "Cancelado") {
+        return [mergedOrder, ...prev.filter((o) => o.id !== updatedOrder.id)].slice(0, 5);
       }
-      return prev.filter((o) => o.id !== order.id);
+      return prev.filter((o) => o.id !== updatedOrder.id);
     });
 
     setReadyOrders((prev) => {
-      if (order.status === "Pronto") {
-        setHighlightedOrderId(order.id); // Destaca o pedido pronto
-        return [order, ...prev.filter((o) => o.id !== order.id)].slice(0, 5);
+      const existingOrder = prev.find((o) => o.id === updatedOrder.id);
+      const mergedOrder = existingOrder ? mergeOrderData(existingOrder, updatedOrder) : updatedOrder;
+
+      if (updatedOrder.status === "Pronto") {
+        setHighlightedOrderId(updatedOrder.id); // Destaca o pedido pronto
+        return [mergedOrder, ...prev.filter((o) => o.id !== updatedOrder.id)].slice(0, 5);
       }
-      return prev.filter((o) => o.id !== order.id);
+      return prev.filter((o) => o.id !== updatedOrder.id);
     });
 
     // Remove destaque após 5 segundos
@@ -60,20 +73,20 @@ const OrderStatus = () => {
   useEffect(() => {
     fetchOrders();
 
-    const socket = new WebSocket("wss://backend.gamaro.me");
+    const socket = new WebSocket("ws://localhost:4000");
 
     socket.onopen = () => console.log("Conectado ao WebSocket");
     socket.onmessage = ({ data }) => {
       try {
         const parsedData = JSON.parse(data);
-        const { event, data: order } = parsedData;
+        const { event, data: updatedOrder } = parsedData;
 
-        if (!event || !order) return;
+        if (!event || !updatedOrder) return;
 
         if (event === "orderCreated") {
-          setPendingOrders((prev) => [order, ...prev].slice(0, 5));
+          setPendingOrders((prev) => [updatedOrder, ...prev].slice(0, 5));
         } else if (event === "orderUpdated") {
-          updateOrderLists(order);
+          updateOrderLists(updatedOrder);
         }
       } catch (err) {
         console.error("Erro ao processar mensagem do WebSocket:", err);
@@ -92,9 +105,13 @@ const OrderStatus = () => {
       className={`order-card ${highlightedOrderId === order.id ? "highlight" : order.status.toLowerCase()}`}
     >
       <div className="order-content">
-        {order.photo && (
+        {order.photo ? (
           <div className="order-photo">
             <img src={order.photo} alt="Foto do pedido" />
+          </div>
+        ) : (
+          <div className="order-name">
+            {order.name}
           </div>
         )}
         <div className="order-details">
