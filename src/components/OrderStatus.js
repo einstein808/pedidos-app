@@ -21,9 +21,7 @@ const OrderStatus = () => {
           .slice(0, 5)
       );
       setReadyOrders(
-        sortedData
-          .filter((order) => order.status === "Pronto")
-          .slice(0, 5)
+        sortedData.filter((order) => order.status === "Pronto").slice(0, 5)
       );
     } catch (error) {
       console.error("Erro ao carregar pedidos:", error);
@@ -75,17 +73,28 @@ const OrderStatus = () => {
 
     const socket = new WebSocket("ws://localhost:4000");
 
-    socket.onopen = () => console.log("Conectado ao WebSocket");
+    socket.onopen = () => console.log("WebSocket conectado");
     socket.onmessage = ({ data }) => {
+      console.log("Mensagem recebida via WebSocket:", data);
+
       try {
         const parsedData = JSON.parse(data);
         const { event, data: updatedOrder } = parsedData;
 
-        if (!event || !updatedOrder) return;
+        if (!event || !updatedOrder) {
+          console.warn("Mensagem do WebSocket sem evento ou dados:", parsedData);
+          return;
+        }
 
         if (event === "orderCreated") {
-          setPendingOrders((prev) => [updatedOrder, ...prev].slice(0, 5));
+          console.log("Evento orderCreated recebido:", updatedOrder);
+          setPendingOrders((prev) => {
+            const updatedList = [updatedOrder, ...prev].slice(0, 5);
+            console.log("Pedidos pendentes atualizados:", updatedList);
+            return updatedList;
+          });
         } else if (event === "orderUpdated") {
+          console.log("Evento orderUpdated recebido:", updatedOrder);
           updateOrderLists(updatedOrder);
         }
       } catch (err) {
@@ -110,17 +119,13 @@ const OrderStatus = () => {
             <img src={order.photo} alt="Foto do pedido" />
           </div>
         ) : (
-          <div className="order-name">
-            {order.name}
-          </div>
+          <div className="order-name">{order.name}</div>
         )}
         <div className="order-details">
           <strong>Bebidas:</strong>
           <div>{order.drinks.map((d) => `${d.quantity}x ${d.name}`).join(", ")}</div>
           <strong>Status:</strong>
-          <span className={`order-status ${order.status.toLowerCase()}`}>
-            {order.status}
-          </span>
+          <span className={`order-status ${order.status.toLowerCase()}`}>{order.status}</span>
         </div>
       </div>
     </div>

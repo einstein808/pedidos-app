@@ -15,11 +15,13 @@ wss.on("connection", (ws) => {
 
 const broadcast = (event, data) => {
   const message = JSON.stringify({ event, data });
+
   clients.forEach((client) => {
     if (client.readyState === client.OPEN) {
-      client.send(message);
+      client.send(message); // Apenas uma serialização aqui
     }
   });
 };
+
 
 module.exports = { wss, broadcast };

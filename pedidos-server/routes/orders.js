@@ -20,37 +20,34 @@ router.post("/", (req, res) => {
     status: "Pendente",
   };
 
-  // Insere o novo pedido no banco de dados
-  db.run("INSERT INTO orders (drinks, photo, name, status) VALUES (?, ?, ?, ?)", 
-    [newOrder.drinks, newOrder.photo, newOrder.name, newOrder.status], 
+  db.run(
+    "INSERT INTO orders (drinks, photo, name, status) VALUES (?, ?, ?, ?)",
+    [newOrder.drinks, newOrder.photo, newOrder.name, newOrder.status],
     function (err) {
       if (err) {
         console.error("Erro ao criar pedido:", err.message);
         return res.status(500).json({ message: "Erro ao criar pedido." });
       }
 
-      // Obtém o id do pedido criado
       const orderId = this.lastID;
 
-      // Broadcasting the new order
-      broadcast("orderCreated", {
+      const orderData = {
         id: orderId,
         drinks: JSON.parse(newOrder.drinks),
         photo: newOrder.photo,
         name: newOrder.name,
         status: newOrder.status,
-      });
+      };
 
-      res.status(201).json({
-        id: orderId,
-        drinks: JSON.parse(newOrder.drinks),
-        photo: newOrder.photo,
-        name: newOrder.name,
-        status: newOrder.status,
-      });
+      // Enviando o evento `orderCreated` no formato esperado (sem a necessidade de serializar novamente)
+      broadcast("orderCreated", orderData);
+
+      res.status(201).json(orderData);
     }
   );
 });
+
+
 
 
 router.get("/", (req, res) => {
