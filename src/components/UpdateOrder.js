@@ -12,7 +12,7 @@ const UpdateOrder = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:4000/orders/latest");
+        const response = await fetch("https://backend.gamaro.me/orders/latest");
         if (!response.ok) {
           throw new Error("Erro ao buscar pedidos");
         }
@@ -31,7 +31,7 @@ const UpdateOrder = () => {
     const connectWebSocket = () => {
       if (webSocket || isConnected) return;
 
-      const ws = new WebSocket("ws://localhost:4000");
+      const ws = new WebSocket("wss://backend.gamaro.me");
 
       ws.onopen = () => {
         console.log("Conexão WebSocket estabelecida");
@@ -112,7 +112,7 @@ const UpdateOrder = () => {
 
   const updateOrderStatus = async (id, status, whatsapp, name) => {
     try {
-      const response = await fetch(`http://localhost:4000/orders/${id}`, {
+      const response = await fetch(`https://backend.gamaro.me/orders/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

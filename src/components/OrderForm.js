@@ -19,7 +19,7 @@ const OrderForm = () => {
   useEffect(() => {
     const fetchDrinks = async () => {
       try {
-        const response = await fetch("http://localhost:4000/drinks/ativos");
+        const response = await fetch("https://backend.gamaro.me/drinks/ativos");
         if (response.ok) {
           const data = await response.json();
           setDrinks(data);
@@ -33,7 +33,7 @@ const OrderForm = () => {
 
     const fetchEvents = async () => {
       try {
-        const response = await fetch("http://localhost:4000/events/ativos");
+        const response = await fetch("https://backend.gamaro.me/events/ativos");
         if (response.ok) {
           const data = await response.json();
           setEvents(data);
@@ -145,7 +145,7 @@ const OrderForm = () => {
     console.log("Pedido enviado para o backend:", newOrder); // Log para verificar os dados antes de enviar
   
     try {
-      const response = await fetch("http://localhost:4000/orders", {
+      const response = await fetch("https://backend.gamaro.me/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

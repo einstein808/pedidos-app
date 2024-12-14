@@ -13,7 +13,7 @@ const Dashboard = () => {
     // Função para buscar os dados do dashboard
     const fetchDashboardData = async () => {
       try {
-        const response = await axios.get("http://localhost:4000/events/dashboard");
+        const response = await axios.get("https://backend.gamaro.me/events/dashboard");
         setEventDrinkCounts(response.data.eventDrinkCounts);
         setTopDrinks(response.data.topDrinks);
         setLoading(false);
@@ -29,7 +29,7 @@ const Dashboard = () => {
   // Função para buscar números de WhatsApp de um evento
   const fetchWhatsAppNumbers = async (eventId) => {
     try {
-      const response = await axios.get(`http://localhost:4000/events/whatsapp/${eventId}`);
+      const response = await axios.get(`https://backend.gamaro.me/events/whatsapp/${eventId}`);
       return response.data.map((row) => `55${row.whatsapp}`); // Adiciona o código do país
     } catch (error) {
       console.error("Erro ao buscar números de WhatsApp:", error);

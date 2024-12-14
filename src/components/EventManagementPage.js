@@ -15,7 +15,7 @@ const EventManagementPage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch("http://localhost:4000/events");
+        const response = await fetch("https://backend.gamaro.me/events");
         if (response.ok) {
           const data = await response.json();
           setEvents(data);
@@ -54,7 +54,7 @@ const EventManagementPage = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:4000/events", {
+      const response = await fetch("https://backend.gamaro.me/events", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -86,7 +86,7 @@ const EventManagementPage = () => {
     const newStatus = currentStatus === 1 ? 0 : 1;
 
     try {
-      const response = await fetch(`http://localhost:4000/events/${eventId}/status`, {
+      const response = await fetch(`https://backend.gamaro.me/events/${eventId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -114,7 +114,7 @@ const EventManagementPage = () => {
     if (!confirmation) return;
 
     try {
-      const response = await fetch(`http://localhost:4000/events/${eventId}`, {
+      const response = await fetch(`https://backend.gamaro.me/events/${eventId}`, {
         method: "DELETE",
       });
 
