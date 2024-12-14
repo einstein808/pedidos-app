@@ -6,7 +6,7 @@ const OrderForm = () => {
   const [drinks, setDrinks] = useState([]);
   const [events, setEvents] = useState([]);
   const [selectedDrinks, setSelectedDrinks] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null); // Evento ativo automaticamente
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [cameraVisible, setCameraVisible] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [name, setName] = useState("");
@@ -37,9 +37,7 @@ const OrderForm = () => {
         if (response.ok) {
           const data = await response.json();
           setEvents(data);
-          console.log(response.ok)
 
-          // Selecionar o primeiro evento ativo, se houver
           if (data.length > 0) {
             setSelectedEvent(data[0]);
           }
@@ -50,7 +48,7 @@ const OrderForm = () => {
         console.error("Erro na requisição:", error);
       }
     };
-    
+
     fetchDrinks();
     fetchEvents();
   }, []);
@@ -93,44 +91,6 @@ const OrderForm = () => {
     }
   };
 
-  const formatOrderDetails = (selectedDrinks) => {
-    return selectedDrinks
-      .map((drink) => `${drink.name} - Quantidade: ${drink.quantity}`)
-      .join("\n");
-  };
-
-  const sendWhatsappMessage = async (number, name, selectedDrinks) => {
-    const orderDetails = formatOrderDetails(selectedDrinks);
-
-    const whatsappBody = {
-      number: `55${number}`,
-      text: `Olá, ${name || "cliente"}! Seu pedido foi recebido com sucesso. \n\nDetalhes do pedido:\n\n${orderDetails}`,
-    };
-
-    try {
-      const response = await fetch(
-        "https://api.gamaro.me/message/sendText/barmanjf",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": "Suapikeyaqui",
-          },
-          body: JSON.stringify(whatsappBody),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Erro ao enviar mensagem para WhatsApp: ${response.statusText}`
-        );
-      }
-      console.log("Mensagem enviada com sucesso.");
-    } catch (error) {
-      console.error("Erro ao enviar mensagem para WhatsApp:", error);
-    }
-  };
-
   const submitOrder = async (capturedPhoto) => {
     if (orderType === "nome" && !name) {
       alert("Por favor, preencha o nome do cliente.");
@@ -145,14 +105,15 @@ const OrderForm = () => {
     const newOrder = {
       name: orderType === "nome" ? name : null,
       drinks: selectedDrinks.map((d) => ({
-        id: d.id,
-        name: d.name,
+        drink_id: d.id, // Use o id correto
         quantity: d.quantity,
       })),
       photo: capturedPhoto || photo || null,
       whatsapp: whatsapp || null,
-      eventId: selectedEvent ? selectedEvent.id : null, // Atribuir o evento ativo ou null
+      eventId: selectedEvent ? selectedEvent.id : null,
     };
+
+    console.log("Pedido enviado para o backend:", newOrder); // Log para verificar os dados antes de enviar
 
     try {
       const response = await fetch("http://localhost:4000/orders", {
@@ -168,15 +129,6 @@ const OrderForm = () => {
       }
 
       alert("Pedido enviado com sucesso!");
-      const orderData = await response.json();
-
-      if (whatsapp) {
-        await sendWhatsappMessage(
-          whatsapp,
-          name,
-          selectedDrinks
-        );
-      }
 
       setSelectedDrinks([]);
       setPhoto(null);
@@ -229,8 +181,6 @@ const OrderForm = () => {
         />
       </div>
 
-      {/* O campo de eventos foi removido, e o evento ativo é automaticamente atribuído */}
-      
       {orderType === "foto" && cameraVisible && (
         <div className="camera">
           <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />

@@ -8,19 +8,18 @@ const db = new sqlite3.Database("database.db", (err) => {
   }
 });
 
-
 // Atualizar esquema do banco de dados
 db.serialize(() => {
-  // Criar ou atualizar a tabela "orders"
+  // Criar ou atualizar a tabela "orders" (ordens), removendo a coluna 'drinks'
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      drinks TEXT NOT NULL,
       photo TEXT,
       name TEXT,
       status TEXT NOT NULL,
       whatsapp TEXT,
       eventId INTEGER,  -- Relacionamento com a tabela events
+      data TEXT NOT NULL, -- Data da ordem
       FOREIGN KEY (eventId) REFERENCES events(id)
     )
   `, (err) => {
@@ -30,25 +29,27 @@ db.serialize(() => {
       console.log("Tabela orders criada ou já existente.");
     }
   });
+
+  // A tabela "drinks" permanece inalterada
+  console.log("A tabela drinks permanece inalterada.");
+
+  // Criar ou atualizar a tabela "order_items" (itens do pedido)
   db.run(`
-  CREATE TABLE IF NOT EXISTS order_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id INTEGER,
-    drink_id INTEGER,
-    quantity INTEGER DEFAULT 1,
-    FOREIGN KEY (order_id) REFERENCES orders(id),
-    FOREIGN KEY (drink_id) REFERENCES drinks(id)
-  )
-`, (err) => {
-  if (err) {
-    console.error("Erro ao criar a tabela order_items:", err.message);
-  } else {
-    console.log("Tabela order_items criada ou já existente.");
-  }
-});
-
-
-  // Garantir que a tabela "drinks" esteja correta
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      drink_id INTEGER,
+      quantidade INTEGER DEFAULT 1,
+      FOREIGN KEY (order_id) REFERENCES orders(id),
+      FOREIGN KEY (drink_id) REFERENCES drinks(id)
+    )
+  `, (err) => {
+    if (err) {
+      console.error("Erro ao criar a tabela order_items:", err.message);
+    } else {
+      console.log("Tabela order_items criada ou já existente.");
+    }
+  });
   db.run(`
     CREATE TABLE IF NOT EXISTS drinks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,16 +66,16 @@ db.serialize(() => {
     }
   });
 
-  // Criar ou atualizar a tabela "events" com os novos campos
+  // Criar ou atualizar a tabela "events" (eventos)
   db.run(`
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
-      location TEXT,        -- Campo de localização
-      guestCount INTEGER,   -- Campo de número de convidados
-      date TEXT,            -- Campo de data do evento
-      isActive BOOLEAN NOT NULL DEFAULT 1 -- Indica se o evento está ativo
+      location TEXT,
+      guestCount INTEGER,
+      date TEXT,
+      isActive BOOLEAN NOT NULL DEFAULT 1
     )
   `, (err) => {
     if (err) {
@@ -82,21 +83,6 @@ db.serialize(() => {
     } else {
       console.log("Tabela events criada ou já existente.");
     }
-  });
-
-  // Atualizar a tabela "events" para incluir novos campos, caso já existam
-  const columnsToAdd = [
-    { column: "location", type: "TEXT" },
-    { column: "guestCount", type: "INTEGER" },
-    { column: "date", type: "TEXT" }
-  ];
-
-  columnsToAdd.forEach(({ column, type }) => {
-    db.run(`ALTER TABLE events ADD COLUMN ${column} ${type}`, (err) => {
-      if (err && !err.message.includes("duplicate column")) {
-        console.error(`Erro ao adicionar coluna ${column}:`, err.message);
-      }
-    });
   });
 });
 

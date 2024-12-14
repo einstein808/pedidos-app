@@ -42,7 +42,7 @@ const UpdateOrder = () => {
       ws.onmessage = (event) => {
         try {
           const { event: eventType, data } = JSON.parse(event.data);
-
+      
           if (eventType === "orderCreated") {
             setOrders((prevOrders) => [...prevOrders, data]);
           } else if (eventType === "orderUpdated") {
@@ -56,6 +56,7 @@ const UpdateOrder = () => {
           console.error("Erro ao processar a mensagem WebSocket:", err);
         }
       };
+      
 
       ws.onclose = () => {
         console.log("Conexão WebSocket fechada.");
