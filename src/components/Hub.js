@@ -8,7 +8,7 @@ const Hub = () => {
     { path: "/update-order", label: "Atualizar Pedido" },
     { path: "/drinks", label: "Gerenciar Drinks" },
     { path: "/create-drink", label: "Criar Drink" },
-    { path: "/evento", label: "Eventos" },
+    { path: "/events", label: "Eventos" },
   ];
 
   return (

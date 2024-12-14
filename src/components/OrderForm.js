@@ -4,7 +4,9 @@ import "./Orderform.css";
 
 const OrderForm = () => {
   const [drinks, setDrinks] = useState([]);
+  const [events, setEvents] = useState([]); // Novo estado para os eventos
   const [selectedDrinks, setSelectedDrinks] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null); // Estado para o evento selecionado
   const [cameraVisible, setCameraVisible] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [name, setName] = useState("");
@@ -27,7 +29,28 @@ const OrderForm = () => {
         console.error("Erro na requisição:", error);
       }
     };
+
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/events/ativos"); // Buscar eventos ativos
+        if (response.ok) {
+          const data = await response.json();
+          setEvents(data);
+
+          // Se houver eventos ativos, seleciona o primeiro evento automaticamente
+          if (data.length > 0) {
+            setSelectedEvent(data[0]);
+          }
+        } else {
+          console.error("Erro ao carregar eventos:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Erro na requisição:", error);
+      }
+    };
+
     fetchDrinks();
+    fetchEvents();
   }, []);
 
   const addDrink = (drinkId) => {
@@ -115,6 +138,7 @@ const OrderForm = () => {
       return;
     }
 
+    // O evento não é mais exibido e será automaticamente atribuído
     const newOrder = {
       name: orderType === "nome" ? name : null,
       drinks: selectedDrinks.map((d) => ({
@@ -124,6 +148,7 @@ const OrderForm = () => {
       })),
       photo: capturedPhoto || photo || null,
       whatsapp: whatsapp || null,
+      eventId: selectedEvent ? selectedEvent.id : null, // Se não houver evento, o valor será null
     };
 
     try {
@@ -155,6 +180,7 @@ const OrderForm = () => {
       setPhoto(null);
       setName("");
       setWhatsapp("");
+      setSelectedEvent(null); // Limpar evento selecionado
       setShowFinalizeButton(true);
     } catch (error) {
       console.error("Erro ao enviar o pedido:", error);
@@ -201,6 +227,8 @@ const OrderForm = () => {
         />
       </div>
 
+      {/* O campo de eventos foi removido, e o evento ativo é automaticamente atribuído */}
+      
       {orderType === "foto" && cameraVisible && (
         <div className="camera">
           <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />

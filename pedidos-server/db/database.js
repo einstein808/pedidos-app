@@ -10,7 +10,7 @@ const db = new sqlite3.Database("database.db", (err) => {
 
 // Atualizar esquema do banco de dados
 db.serialize(() => {
-  // Criar a tabela "orders" se ela não existir
+  // Criar a tabela "orders" se ela não existir e adicionar "eventId"
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,7 +18,9 @@ db.serialize(() => {
       photo TEXT,
       name TEXT,
       status TEXT NOT NULL,
-      whatsapp TEXT
+      whatsapp TEXT,
+      eventId INTEGER,  -- Adicionando campo eventId
+      FOREIGN KEY (eventId) REFERENCES events(id)  -- Relacionando com a tabela events
     )
   `, (err) => {
     if (err) {
@@ -42,6 +44,22 @@ db.serialize(() => {
       console.error("Erro ao criar ou verificar tabela drinks:", err.message);
     } else {
       console.log("Tabela drinks está atualizada.");
+    }
+  });
+
+  // Criar a tabela "events" se não existir
+  db.run(`
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      isActive BOOLEAN NOT NULL DEFAULT 1 -- Indica se o evento está ativo (1) ou não (0)
+    )
+  `, (err) => {
+    if (err) {
+      console.error("Erro ao criar ou verificar tabela events:", err.message);
+    } else {
+      console.log("Tabela events criada ou já existente.");
     }
   });
 });

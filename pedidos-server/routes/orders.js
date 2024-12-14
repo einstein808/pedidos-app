@@ -5,7 +5,7 @@ const { broadcast } = require("../websockets/websocket");
 const router = express.Router();
 
 router.post("/", (req, res) => {
-  const { drinks, photo, name, whatsapp } = req.body;
+  const { drinks, photo, name, whatsapp, eventId } = req.body;
 
   if (!drinks || (!photo && !name)) {
     return res
@@ -13,17 +13,23 @@ router.post("/", (req, res) => {
       .json({ message: "Drinks e pelo menos um identificador (nome ou foto) são obrigatórios." });
   }
 
+  // Validating the eventId if it's provided
+  if (eventId && isNaN(eventId)) {
+    return res.status(400).json({ message: "Event ID inválido." });
+  }
+
   const newOrder = {
     drinks: JSON.stringify(drinks),
     photo: photo || null,
     name: name || null,
     whatsapp: whatsapp || null,
+    eventId: eventId || null,  // Add eventId to the order
     status: "Pendente",
   };
 
   db.run(
-    "INSERT INTO orders (drinks, photo, name, whatsapp, status) VALUES (?, ?, ?, ?, ?)",
-    [newOrder.drinks, newOrder.photo, newOrder.name, newOrder.whatsapp, newOrder.status],
+    "INSERT INTO orders (drinks, photo, name, whatsapp, eventId, status) VALUES (?, ?, ?, ?, ?, ?)",
+    [newOrder.drinks, newOrder.photo, newOrder.name, newOrder.whatsapp, newOrder.eventId, newOrder.status],
     function (err) {
       if (err) {
         console.error("Erro ao criar pedido:", err.message);
@@ -38,6 +44,7 @@ router.post("/", (req, res) => {
         photo: newOrder.photo,
         name: newOrder.name,
         whatsapp: newOrder.whatsapp,
+        eventId: newOrder.eventId,  // Include eventId in the response
         status: newOrder.status,
       };
 
@@ -47,8 +54,6 @@ router.post("/", (req, res) => {
     }
   );
 });
-
-
 
 
 router.get("/", (req, res) => {
