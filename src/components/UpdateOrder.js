@@ -42,7 +42,7 @@ const UpdateOrder = () => {
       ws.onmessage = (event) => {
         try {
           const { event: eventType, data } = JSON.parse(event.data);
-      
+
           if (eventType === "orderCreated") {
             setOrders((prevOrders) => [...prevOrders, data]);
           } else if (eventType === "orderUpdated") {
@@ -56,7 +56,6 @@ const UpdateOrder = () => {
           console.error("Erro ao processar a mensagem WebSocket:", err);
         }
       };
-      
 
       ws.onclose = () => {
         console.log("Conexão WebSocket fechada.");
@@ -80,10 +79,13 @@ const UpdateOrder = () => {
     };
   }, [webSocket, isConnected]);
 
-  const sendWhatsappMessage = async (number, message) => {
+  const sendWhatsappMessage = async (number, name, message) => {
+    // Adiciona o nome do cliente se disponível
+    const customizedMessage = name ? `Olá ${name}, ${message}` : message;
+
     const whatsappBody = {
       number: `55${number}`,
-      text: message,
+      text: customizedMessage,
     };
 
     try {
@@ -93,7 +95,7 @@ const UpdateOrder = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "apikey": "Suapikeyaqui",
+            "apikey": "Suapikeyaqui", // Certifique-se de que sua API key está correta
           },
           body: JSON.stringify(whatsappBody),
         }
@@ -108,7 +110,7 @@ const UpdateOrder = () => {
     }
   };
 
-  const updateOrderStatus = async (id, status, whatsapp) => {
+  const updateOrderStatus = async (id, status, whatsapp, name) => {
     try {
       const response = await fetch(`http://localhost:4000/orders/${id}`, {
         method: "PUT",
@@ -117,27 +119,28 @@ const UpdateOrder = () => {
         },
         body: JSON.stringify({ status }),
       });
-  
+
       if (response.ok) {
         console.log("Status do pedido atualizado com sucesso.");
         const updatedOrder = await response.json(); // Supondo que você receba o pedido atualizado como resposta
         // Se o pedido for marcado como "Pronto", envia a mensagem
         if (status === "Pronto" && whatsapp) {
           // Criação da mensagem com detalhes dos drinks e quantidades
-          let message = `Olá! Seu pedido está pronto. Aguardamos você!\n\nDetalhes do Pedido:\n`;
+          let message = `Seu pedido está pronto! Aguardamos você!\n\nDetalhes do Pedido:\n`;
           message += "--------------------------------\n";
-          
+
           // Verificar se o pedido tem bebidas
           if (updatedOrder.drinks && Array.isArray(updatedOrder.drinks)) {
-            updatedOrder.drinks.forEach(drink => {
+            updatedOrder.drinks.forEach((drink) => {
               message += `${drink.quantity}x ${drink.name}\n`;
             });
           } else {
             message += "Sem bebidas no pedido.\n";
           }
-  
+
           message += "--------------------------------";
-          await sendWhatsappMessage(whatsapp, message);
+          // Enviar a mensagem com o nome (se disponível)
+          await sendWhatsappMessage(whatsapp, name, message);
         }
       } else {
         const errorResponse = await response.json();
@@ -148,7 +151,6 @@ const UpdateOrder = () => {
     }
   };
 
-  
   const filteredOrders = orders.filter((order) => order.status === selectedStatus);
 
   return (
@@ -280,7 +282,7 @@ const UpdateOrder = () => {
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <div style={{ marginBottom: "10px" }}>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "Pendente", order.whatsapp)}
+                        onClick={() => updateOrderStatus(order.id, "Pendente", order.whatsapp, order.name)}
                         style={{
                           padding: "8px 16px",
                           backgroundColor: "#f0ad4e",
@@ -294,7 +296,7 @@ const UpdateOrder = () => {
                         Pendente
                       </button>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "Pronto", order.whatsapp)}
+                        onClick={() => updateOrderStatus(order.id, "Pronto", order.whatsapp, order.name)}
                         style={{
                           padding: "8px 16px",
                           backgroundColor: "#5bc0de",
@@ -308,7 +310,7 @@ const UpdateOrder = () => {
                         Pronto
                       </button>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "Cancelado", order.whatsapp)}
+                        onClick={() => updateOrderStatus(order.id, "Cancelado", order.whatsapp, order.name)}
                         style={{
                           padding: "8px 16px",
                           backgroundColor: "#d9534f",

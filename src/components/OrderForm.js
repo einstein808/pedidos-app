@@ -53,6 +53,35 @@ const OrderForm = () => {
     fetchEvents();
   }, []);
 
+  // Função para enviar mensagem via WhatsApp
+  const sendWhatsappMessage = async (number, message) => {
+    const whatsappBody = {
+      number: `55${number}`, // Assumindo que o número seja do Brasil
+      text: message,
+    };
+
+    try {
+      const response = await fetch(
+        "https://api.gamaro.me/message/sendText/barmanjf",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "Suapikeyaqui",
+          },
+          body: JSON.stringify(whatsappBody),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erro ao enviar mensagem para WhatsApp: ${response.statusText}`);
+      }
+      console.log("Mensagem enviada com sucesso.");
+    } catch (error) {
+      console.error("Erro ao enviar mensagem para WhatsApp:", error);
+    }
+  };
+
   const addDrink = (drinkId) => {
     const drink = drinks.find((d) => d.id === drinkId);
     if (drink) {
@@ -130,6 +159,19 @@ const OrderForm = () => {
   
       alert("Pedido enviado com sucesso!");
   
+      // Enviar mensagem de WhatsApp
+      if (whatsapp) {
+        let message = `Olá ${name}, seu pedido foi criado com sucesso!\n\n`;
+        newOrder.drinks.forEach((d) => {
+          message += `${d.quantity}x ${drinks.find((drink) => drink.id === d.drink_id)?.name}\n`;
+        });
+        message += `Evento: ${selectedEvent ? selectedEvent.name : "Sem evento"}\n`;
+        message += "Agradecemos seu pedido!";
+  
+        // Enviar para o WhatsApp
+        await sendWhatsappMessage(whatsapp, message);
+      }
+  
       // Limpar campos de drinks, foto, nome e whatsapp, mas manter o evento
       setSelectedDrinks([]);
       setPhoto(null);
@@ -142,7 +184,6 @@ const OrderForm = () => {
       alert("Erro ao enviar o pedido.");
     }
   };
-  
 
   return (
     <div className="order-form">
