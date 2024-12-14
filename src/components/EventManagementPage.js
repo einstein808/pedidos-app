@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 
 const EventManagementPage = () => {
   const [events, setEvents] = useState([]);
-  const [newEventName, setNewEventName] = useState("");
+  const [newEvent, setNewEvent] = useState({
+    name: "",
+    location: "Juiz de Fora", // Padrão para a primeira cidade
+    customLocation: "",
+    guestCount: "",
+    date: "",
+    isActive: 0,
+  });
 
   // Buscar todos os eventos
   useEffect(() => {
@@ -24,12 +31,27 @@ const EventManagementPage = () => {
 
   // Função para criar um novo evento
   const createEvent = async () => {
-    if (!newEventName) {
-      alert("Por favor, insira o nome do evento.");
+    const { name, location, customLocation, guestCount, date } = newEvent;
+
+    if (!name || !guestCount || !date) {
+      alert("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
 
-    const newEvent = { name: newEventName, isActive: 0 }; // "0" para inativo inicialmente
+    const finalLocation = location === "Outra" ? customLocation : location;
+
+    if (!finalLocation) {
+      alert("Por favor, preencha a localização.");
+      return;
+    }
+
+    const eventToCreate = {
+      name,
+      location: finalLocation,
+      guestCount: parseInt(guestCount, 10),
+      date,
+      isActive: 0, // Evento começa inativo
+    };
 
     try {
       const response = await fetch("http://localhost:4000/events", {
@@ -37,7 +59,7 @@ const EventManagementPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newEvent),
+        body: JSON.stringify(eventToCreate),
       });
 
       if (!response.ok) {
@@ -46,15 +68,22 @@ const EventManagementPage = () => {
 
       const eventData = await response.json();
       setEvents((prevEvents) => [...prevEvents, eventData]);
-      setNewEventName(""); // Limpar o campo após a criação
+      setNewEvent({
+        name: "",
+        location: "Juiz de Fora",
+        customLocation: "",
+        guestCount: "",
+        date: "",
+        isActive: 0,
+      }); // Resetar campos após criação
     } catch (error) {
       console.error("Erro ao criar evento:", error);
     }
   };
 
-  // Função para ativar ou desativar o evento
+  // Função para alternar o status do evento
   const toggleEventStatus = async (eventId, currentStatus) => {
-    const newStatus = currentStatus === 1 ? 0 : 1; // Alterna entre 0 e 1
+    const newStatus = currentStatus === 1 ? 0 : 1;
 
     try {
       const response = await fetch(`http://localhost:4000/events/${eventId}/status`, {
@@ -69,7 +98,6 @@ const EventManagementPage = () => {
         throw new Error(`Erro ao alterar o status do evento: ${response.statusText}`);
       }
 
-      // Atualizar o status do evento localmente
       setEvents((prevEvents) =>
         prevEvents.map((event) =>
           event.id === eventId ? { ...event, isActive: newStatus } : event
@@ -101,25 +129,79 @@ const EventManagementPage = () => {
   };
 
   return (
-    <div className="event-management">
-      <h2>Gerenciar Eventos</h2>
+    <div className="event-management" style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+      <h2 style={{ color: "#4CAF50" }}>Gerenciar Eventos</h2>
 
-      <div className="create-event">
+      <div className="create-event" style={{ marginBottom: "20px" }}>
         <h3>Criar Novo Evento</h3>
         <input
           type="text"
-          value={newEventName}
-          onChange={(e) => setNewEventName(e.target.value)}
+          value={newEvent.name}
+          onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
           placeholder="Nome do Evento"
+          style={{ marginBottom: "10px", padding: "8px", width: "100%" }}
         />
-        <button onClick={createEvent}>Criar Evento</button>
+        <select
+          value={newEvent.location}
+          onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value, customLocation: "" })}
+          style={{ marginBottom: "10px", padding: "8px", width: "100%" }}
+        >
+          <option value="Juiz de Fora">Juiz de Fora</option>
+          <option value="Matias Simão">Matias Simão</option>
+          <option value="Outra">Outra</option>
+        </select>
+        {newEvent.location === "Outra" && (
+          <input
+            type="text"
+            value={newEvent.customLocation}
+            onChange={(e) => setNewEvent({ ...newEvent, customLocation: e.target.value })}
+            placeholder="Digite a localização personalizada"
+            style={{ marginBottom: "10px", padding: "8px", width: "100%" }}
+          />
+        )}
+        <input
+          type="number"
+          value={newEvent.guestCount}
+          onChange={(e) => setNewEvent({ ...newEvent, guestCount: e.target.value })}
+          placeholder="Número de Convidados"
+          style={{ marginBottom: "10px", padding: "8px", width: "100%" }}
+        />
+        <input
+          type="date"
+          value={newEvent.date}
+          onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+          style={{ marginBottom: "10px", padding: "8px", width: "100%" }}
+        />
+        <button
+          onClick={createEvent}
+          style={{
+            padding: "10px",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Criar Evento
+        </button>
       </div>
 
       <h3>Eventos Ativos/Inativos</h3>
-      <ul>
+      <ul style={{ listStyleType: "none", padding: 0 }}>
         {events.map((event) => (
-          <li key={event.id}>
-            <span>{event.name}</span>
+          <li
+            key={event.id}
+            style={{
+              marginBottom: "10px",
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: "5px",
+            }}
+          >
+            <strong>Nome:</strong> {event.name} <br />
+            <strong>Localização:</strong> {event.location} <br />
+            <strong>Convidados:</strong> {event.guestCount} <br />
+            <strong>Data:</strong> {event.date} <br />
             <button
               onClick={() => toggleEventStatus(event.id, event.isActive)}
               style={{
@@ -127,6 +209,7 @@ const EventManagementPage = () => {
                 color: "white",
                 padding: "5px 10px",
                 border: "none",
+                marginRight: "10px",
               }}
             >
               {event.isActive === 1 ? "Desativar" : "Ativar"}
@@ -138,7 +221,6 @@ const EventManagementPage = () => {
                 color: "white",
                 padding: "5px 10px",
                 border: "none",
-                marginLeft: "10px",
               }}
             >
               Excluir

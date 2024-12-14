@@ -4,17 +4,18 @@ import "./Orderform.css";
 
 const OrderForm = () => {
   const [drinks, setDrinks] = useState([]);
-  const [events, setEvents] = useState([]); // Novo estado para os eventos
+  const [events, setEvents] = useState([]);
   const [selectedDrinks, setSelectedDrinks] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null); // Estado para o evento selecionado
+  const [selectedEvent, setSelectedEvent] = useState(null); // Evento ativo automaticamente
   const [cameraVisible, setCameraVisible] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [name, setName] = useState("");
-  const [whatsapp, setWhatsapp] = useState(""); // Campo para WhatsApp
+  const [whatsapp, setWhatsapp] = useState("");
   const [orderType, setOrderType] = useState("nome");
   const [showFinalizeButton, setShowFinalizeButton] = useState(true);
   const webcamRef = useRef(null);
 
+  // Carregar drinks e eventos
   useEffect(() => {
     const fetchDrinks = async () => {
       try {
@@ -32,12 +33,13 @@ const OrderForm = () => {
 
     const fetchEvents = async () => {
       try {
-        const response = await fetch("http://localhost:4000/events/ativos"); // Buscar eventos ativos
+        const response = await fetch("http://localhost:4000/events/ativos");
         if (response.ok) {
           const data = await response.json();
           setEvents(data);
+          console.log(response.ok)
 
-          // Se houver eventos ativos, seleciona o primeiro evento automaticamente
+          // Selecionar o primeiro evento ativo, se houver
           if (data.length > 0) {
             setSelectedEvent(data[0]);
           }
@@ -48,7 +50,7 @@ const OrderForm = () => {
         console.error("Erro na requisição:", error);
       }
     };
-
+    
     fetchDrinks();
     fetchEvents();
   }, []);
@@ -119,7 +121,9 @@ const OrderForm = () => {
       );
 
       if (!response.ok) {
-        throw new Error(`Erro ao enviar mensagem para WhatsApp: ${response.statusText}`);
+        throw new Error(
+          `Erro ao enviar mensagem para WhatsApp: ${response.statusText}`
+        );
       }
       console.log("Mensagem enviada com sucesso.");
     } catch (error) {
@@ -138,7 +142,6 @@ const OrderForm = () => {
       return;
     }
 
-    // O evento não é mais exibido e será automaticamente atribuído
     const newOrder = {
       name: orderType === "nome" ? name : null,
       drinks: selectedDrinks.map((d) => ({
@@ -148,7 +151,7 @@ const OrderForm = () => {
       })),
       photo: capturedPhoto || photo || null,
       whatsapp: whatsapp || null,
-      eventId: selectedEvent ? selectedEvent.id : null, // Se não houver evento, o valor será null
+      eventId: selectedEvent ? selectedEvent.id : null, // Atribuir o evento ativo ou null
     };
 
     try {
@@ -167,12 +170,11 @@ const OrderForm = () => {
       alert("Pedido enviado com sucesso!");
       const orderData = await response.json();
 
-      // Enviar mensagem via WhatsApp, se o número foi informado
       if (whatsapp) {
         await sendWhatsappMessage(
           whatsapp,
           name,
-          selectedDrinks // Passando os drinks selecionados
+          selectedDrinks
         );
       }
 
@@ -180,7 +182,7 @@ const OrderForm = () => {
       setPhoto(null);
       setName("");
       setWhatsapp("");
-      setSelectedEvent(null); // Limpar evento selecionado
+      setSelectedEvent(null);
       setShowFinalizeButton(true);
     } catch (error) {
       console.error("Erro ao enviar o pedido:", error);

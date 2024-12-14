@@ -9,6 +9,7 @@ import DrinkForm from './components/DrinkForm';
 import ManageDrinks from './components/ManageDrinks';
 import Hub from './components/Hub';
 import EventManagementPage from './components/EventManagementPage'
+import Dashboard from './components/Dashboard';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/drinks" element={<ManageDrinks />} />
         <Route path="/create-drink" element={<DrinkForm />} />
         <Route path="/events" element={<EventManagementPage />} />
+        <Route path="/dashboard" element={<Dashboard/>} />
         <Route path="/" element={<Hub />} />
       </Routes>
     </Router>

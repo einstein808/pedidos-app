@@ -8,9 +8,10 @@ const db = new sqlite3.Database("database.db", (err) => {
   }
 });
 
+
 // Atualizar esquema do banco de dados
 db.serialize(() => {
-  // Criar a tabela "orders" se ela não existir e adicionar "eventId"
+  // Criar ou atualizar a tabela "orders"
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,8 +20,8 @@ db.serialize(() => {
       name TEXT,
       status TEXT NOT NULL,
       whatsapp TEXT,
-      eventId INTEGER,  -- Adicionando campo eventId
-      FOREIGN KEY (eventId) REFERENCES events(id)  -- Relacionando com a tabela events
+      eventId INTEGER,  -- Relacionamento com a tabela events
+      FOREIGN KEY (eventId) REFERENCES events(id)
     )
   `, (err) => {
     if (err) {
@@ -29,6 +30,23 @@ db.serialize(() => {
       console.log("Tabela orders criada ou já existente.");
     }
   });
+  db.run(`
+  CREATE TABLE IF NOT EXISTS order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER,
+    drink_id INTEGER,
+    quantity INTEGER DEFAULT 1,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (drink_id) REFERENCES drinks(id)
+  )
+`, (err) => {
+  if (err) {
+    console.error("Erro ao criar a tabela order_items:", err.message);
+  } else {
+    console.log("Tabela order_items criada ou já existente.");
+  }
+});
+
 
   // Garantir que a tabela "drinks" esteja correta
   db.run(`
@@ -47,13 +65,16 @@ db.serialize(() => {
     }
   });
 
-  // Criar a tabela "events" se não existir
+  // Criar ou atualizar a tabela "events" com os novos campos
   db.run(`
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       description TEXT,
-      isActive BOOLEAN NOT NULL DEFAULT 1 -- Indica se o evento está ativo (1) ou não (0)
+      location TEXT,        -- Campo de localização
+      guestCount INTEGER,   -- Campo de número de convidados
+      date TEXT,            -- Campo de data do evento
+      isActive BOOLEAN NOT NULL DEFAULT 1 -- Indica se o evento está ativo
     )
   `, (err) => {
     if (err) {
@@ -61,6 +82,21 @@ db.serialize(() => {
     } else {
       console.log("Tabela events criada ou já existente.");
     }
+  });
+
+  // Atualizar a tabela "events" para incluir novos campos, caso já existam
+  const columnsToAdd = [
+    { column: "location", type: "TEXT" },
+    { column: "guestCount", type: "INTEGER" },
+    { column: "date", type: "TEXT" }
+  ];
+
+  columnsToAdd.forEach(({ column, type }) => {
+    db.run(`ALTER TABLE events ADD COLUMN ${column} ${type}`, (err) => {
+      if (err && !err.message.includes("duplicate column")) {
+        console.error(`Erro ao adicionar coluna ${column}:`, err.message);
+      }
+    });
   });
 });
 
