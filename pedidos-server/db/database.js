@@ -17,7 +17,8 @@ db.serialize(() => {
       drinks TEXT NOT NULL,
       photo TEXT,
       name TEXT,
-      status TEXT NOT NULL
+      status TEXT NOT NULL,
+      whatsapp TEXT
     )
   `, (err) => {
     if (err) {

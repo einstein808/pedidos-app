@@ -5,7 +5,7 @@ const { broadcast } = require("../websockets/websocket");
 const router = express.Router();
 
 router.post("/", (req, res) => {
-  const { drinks, photo, name } = req.body;
+  const { drinks, photo, name, whatsapp } = req.body;
 
   if (!drinks || (!photo && !name)) {
     return res
@@ -17,12 +17,13 @@ router.post("/", (req, res) => {
     drinks: JSON.stringify(drinks),
     photo: photo || null,
     name: name || null,
+    whatsapp: whatsapp || null,
     status: "Pendente",
   };
 
   db.run(
-    "INSERT INTO orders (drinks, photo, name, status) VALUES (?, ?, ?, ?)",
-    [newOrder.drinks, newOrder.photo, newOrder.name, newOrder.status],
+    "INSERT INTO orders (drinks, photo, name, whatsapp, status) VALUES (?, ?, ?, ?, ?)",
+    [newOrder.drinks, newOrder.photo, newOrder.name, newOrder.whatsapp, newOrder.status],
     function (err) {
       if (err) {
         console.error("Erro ao criar pedido:", err.message);
@@ -36,10 +37,10 @@ router.post("/", (req, res) => {
         drinks: JSON.parse(newOrder.drinks),
         photo: newOrder.photo,
         name: newOrder.name,
+        whatsapp: newOrder.whatsapp,
         status: newOrder.status,
       };
 
-      // Enviando o evento `orderCreated` no formato esperado (sem a necessidade de serializar novamente)
       broadcast("orderCreated", orderData);
 
       res.status(201).json(orderData);
@@ -122,28 +123,28 @@ router.get("/", (req, res) => {
     });
   });
   
-router.get("/latest", (req, res) => {
-  // Consulta os últimos 20 pedidos ordenados por ID (do mais recente para o mais antigo)
-  const query = "SELECT * FROM orders ORDER BY id DESC LIMIT 20";
-
-  db.all(query, [], (err, rows) => {
-    if (err) {
-      console.error("Erro ao buscar os últimos pedidos:", err.message);
-      return res.status(500).json({ message: "Erro ao buscar os últimos pedidos." });
-    }
-
-    // Formata os resultados
-    const orders = rows.map((row) => ({
-      id: row.id,
-      drinks: JSON.parse(row.drinks),
-      photo: row.photo,
-      name: row.name,
-      status: row.status,
-    }));
-
-    // Retorna os pedidos em ordem cronológica (mais antigo primeiro)
-    res.json(orders.reverse());
+  router.get("/latest", (req, res) => {
+    // Consulta os últimos 20 pedidos ordenados por ID (do mais recente para o mais antigo)
+    const query = "SELECT * FROM orders ORDER BY id DESC LIMIT 20";
+  
+    db.all(query, [], (err, rows) => {
+      if (err) {
+        console.error("Erro ao buscar os últimos pedidos:", err.message);
+        return res.status(500).json({ message: "Erro ao buscar os últimos pedidos." });
+      }
+  
+      // Formata os resultados
+      const orders = rows.map((row) => ({
+        id: row.id,
+        drinks: JSON.parse(row.drinks),
+        photo: row.photo,
+        name: row.name,
+        whatsapp: row.whatsapp,
+        status: row.status,
+      }));
+  
+      // Retorna os pedidos em ordem cronológica (mais antigo primeiro)
+      res.json(orders.reverse());
+    });
   });
-});
-
 module.exports = router;

@@ -8,14 +8,15 @@ const OrderForm = () => {
   const [cameraVisible, setCameraVisible] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [name, setName] = useState("");
+  const [whatsapp, setWhatsapp] = useState(""); // Campo para WhatsApp
   const [orderType, setOrderType] = useState("nome");
-  const [showFinalizeButton, setShowFinalizeButton] = useState(true); // Controle do botão
+  const [showFinalizeButton, setShowFinalizeButton] = useState(true);
   const webcamRef = useRef(null);
 
   useEffect(() => {
     const fetchDrinks = async () => {
       try {
-        const response = await fetch("https://backend.gamaro.me/drinks/ativos");
+        const response = await fetch("http://localhost:4000/drinks/ativos");
         if (response.ok) {
           const data = await response.json();
           setDrinks(data);
@@ -61,9 +62,45 @@ const OrderForm = () => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       setPhoto(imageSrc);
-      setCameraVisible(false); // Ocultar câmera após captura
-      setShowFinalizeButton(false); // Esconde o botão "Finalizar Pedido" após captura
-      await submitOrder(imageSrc); // Envia o pedido automaticamente
+      setCameraVisible(false);
+      setShowFinalizeButton(false);
+      await submitOrder(imageSrc);
+    }
+  };
+
+  const formatOrderDetails = (selectedDrinks) => {
+    return selectedDrinks
+      .map((drink) => `${drink.name} - Quantidade: ${drink.quantity}`)
+      .join("\n");
+  };
+
+  const sendWhatsappMessage = async (number, name, selectedDrinks) => {
+    const orderDetails = formatOrderDetails(selectedDrinks);
+
+    const whatsappBody = {
+      number: `55${number}`,
+      text: `Olá, ${name || "cliente"}! Seu pedido foi recebido com sucesso. \n\nDetalhes do pedido:\n\n${orderDetails}`,
+    };
+
+    try {
+      const response = await fetch(
+        "https://api.gamaro.me/message/sendText/barmanjf",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "Suapikeyaqui",
+          },
+          body: JSON.stringify(whatsappBody),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erro ao enviar mensagem para WhatsApp: ${response.statusText}`);
+      }
+      console.log("Mensagem enviada com sucesso.");
+    } catch (error) {
+      console.error("Erro ao enviar mensagem para WhatsApp:", error);
     }
   };
 
@@ -86,10 +123,11 @@ const OrderForm = () => {
         quantity: d.quantity,
       })),
       photo: capturedPhoto || photo || null,
+      whatsapp: whatsapp || null,
     };
 
     try {
-      const response = await fetch("https://backend.gamaro.me/orders", {
+      const response = await fetch("http://localhost:4000/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,10 +140,22 @@ const OrderForm = () => {
       }
 
       alert("Pedido enviado com sucesso!");
+      const orderData = await response.json();
+
+      // Enviar mensagem via WhatsApp, se o número foi informado
+      if (whatsapp) {
+        await sendWhatsappMessage(
+          whatsapp,
+          name,
+          selectedDrinks // Passando os drinks selecionados
+        );
+      }
+
       setSelectedDrinks([]);
       setPhoto(null);
       setName("");
-      setShowFinalizeButton(true); // Reexibe o botão após o envio
+      setWhatsapp("");
+      setShowFinalizeButton(true);
     } catch (error) {
       console.error("Erro ao enviar o pedido:", error);
       alert("Erro ao enviar o pedido.");
@@ -141,6 +191,16 @@ const OrderForm = () => {
         </div>
       )}
 
+      <div className="whatsapp-number">
+        <label>WhatsApp (Opcional):</label>
+        <input
+          type="text"
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value)}
+          placeholder="Ex: 3298374982"
+        />
+      </div>
+
       {orderType === "foto" && cameraVisible && (
         <div className="camera">
           <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />
@@ -161,7 +221,7 @@ const OrderForm = () => {
           {drinks.map((drink) => (
             <div key={drink.id} className="drink-item">
               <img
-                src={drink.photo || "caminho/para/imagem/placeholder.png"}
+                src={drink.photo || "placeholder.png"}
                 alt={drink.name}
                 className="drink-image"
               />
@@ -207,9 +267,9 @@ const OrderForm = () => {
             <button
               onClick={() => {
                 if (orderType === "foto") {
-                  setCameraVisible(true); // Exibe a câmera para capturar a foto
+                  setCameraVisible(true);
                 } else {
-                  submitOrder(); // Finaliza o pedido sem foto
+                  submitOrder();
                 }
               }}
               className="finalize-order-button"

@@ -12,7 +12,7 @@ const UpdateOrder = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const response = await fetch("https://backend.gamaro.me/orders/latest");
+        const response = await fetch("http://localhost:4000/orders/latest");
         if (!response.ok) {
           throw new Error("Erro ao buscar pedidos");
         }
@@ -31,7 +31,7 @@ const UpdateOrder = () => {
     const connectWebSocket = () => {
       if (webSocket || isConnected) return;
 
-      const ws = new WebSocket("wss://backend.gamaro.me/");
+      const ws = new WebSocket("ws://localhost:4000");
 
       ws.onopen = () => {
         console.log("Conexão WebSocket estabelecida");
@@ -79,18 +79,65 @@ const UpdateOrder = () => {
     };
   }, [webSocket, isConnected]);
 
-  const updateOrderStatus = async (id, status) => {
+  const sendWhatsappMessage = async (number, message) => {
+    const whatsappBody = {
+      number: `55${number}`,
+      text: message,
+    };
+
     try {
-      const response = await fetch(`https://backend.gamaro.me/orders/${id}`, {
+      const response = await fetch(
+        "https://api.gamaro.me/message/sendText/barmanjf",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "Suapikeyaqui",
+          },
+          body: JSON.stringify(whatsappBody),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erro ao enviar mensagem para WhatsApp: ${response.statusText}`);
+      }
+      console.log("Mensagem enviada com sucesso.");
+    } catch (error) {
+      console.error("Erro ao enviar mensagem para WhatsApp:", error);
+    }
+  };
+
+  const updateOrderStatus = async (id, status, whatsapp) => {
+    try {
+      const response = await fetch(`http://localhost:4000/orders/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status }),
       });
-
+  
       if (response.ok) {
         console.log("Status do pedido atualizado com sucesso.");
+        const updatedOrder = await response.json(); // Supondo que você receba o pedido atualizado como resposta
+        // Se o pedido for marcado como "Pronto", envia a mensagem
+        if (status === "Pronto" && whatsapp) {
+          // Criação da mensagem com detalhes dos drinks e quantidades
+          let message = `Olá! Seu pedido está pronto. Aguardamos você!\n\nDetalhes do Pedido:\n`;
+          message += "--------------------------------\n";
+          
+          // Verificar se o pedido tem bebidas
+          if (updatedOrder.drinks && Array.isArray(updatedOrder.drinks)) {
+            updatedOrder.drinks.forEach(drink => {
+              message += `${drink.quantity}x ${drink.name}\n`;
+            });
+          } else {
+            message += "Sem bebidas no pedido.\n";
+          }
+  
+          message += "--------------------------------";
+          await sendWhatsappMessage(whatsapp, message);
+        }
       } else {
         const errorResponse = await response.json();
         console.error("Erro ao atualizar o status do pedido:", errorResponse);
@@ -100,6 +147,7 @@ const UpdateOrder = () => {
     }
   };
 
+  
   const filteredOrders = orders.filter((order) => order.status === selectedStatus);
 
   return (
@@ -231,7 +279,7 @@ const UpdateOrder = () => {
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <div style={{ marginBottom: "10px" }}>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "Pendente")}
+                        onClick={() => updateOrderStatus(order.id, "Pendente", order.whatsapp)}
                         style={{
                           padding: "8px 16px",
                           backgroundColor: "#f0ad4e",
@@ -245,7 +293,7 @@ const UpdateOrder = () => {
                         Pendente
                       </button>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "Pronto")}
+                        onClick={() => updateOrderStatus(order.id, "Pronto", order.whatsapp)}
                         style={{
                           padding: "8px 16px",
                           backgroundColor: "#5bc0de",
@@ -259,7 +307,7 @@ const UpdateOrder = () => {
                         Pronto
                       </button>
                       <button
-                        onClick={() => updateOrderStatus(order.id, "Cancelado")}
+                        onClick={() => updateOrderStatus(order.id, "Cancelado", order.whatsapp)}
                         style={{
                           padding: "8px 16px",
                           backgroundColor: "#d9534f",
