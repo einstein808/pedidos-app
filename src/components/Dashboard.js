@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios"; // Para facilitar as requisições HTTP
+import axios from "axios";
 import './Dashboard.css'
 
 const Dashboard = () => {
@@ -32,15 +32,14 @@ const Dashboard = () => {
     <div>
       <h2>Dashboard de Eventos</h2>
       
-      {/* Exibição do número de drinks por evento, quantidade de pessoas e localidade */}
+      {/* Exibição do número total de drinks por evento */}
       <section>
-        <h3>Número de Drinks por Evento</h3>
+        <h3>Número Total de Drinks por Evento</h3>
         <table>
           <thead>
             <tr>
               <th>Evento</th>
               <th>Quantidade de Drinks</th>
-              <th>Quantidade de Pessoas</th>
               <th>Localidade</th>
             </tr>
           </thead>
@@ -49,8 +48,7 @@ const Dashboard = () => {
               <tr key={event.eventId}>
                 <td>{event.eventName}</td>
                 <td>{event.drinkCount}</td>
-                <td>{event.guestCount}</td> {/* Exibindo a quantidade de pessoas */}
-                <td>{event.location}</td>  {/* Exibindo a localidade */}
+                <td>{event.location}</td>
               </tr>
             ))}
           </tbody>
@@ -64,7 +62,7 @@ const Dashboard = () => {
           <thead>
             <tr>
               <th>Drink</th>
-              <th>Quantidade de Pedidos</th>
+              <th>Quantidade de Drinks Vendidos</th>
             </tr>
           </thead>
           <tbody>

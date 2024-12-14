@@ -38,40 +38,56 @@ router.post("/", (req, res) => {
 
 // Rota para exibir o dashboard com número de drinks por evento e drinks mais vendidos
 router.get("/dashboard", (req, res) => {
-    // Consulta para pegar o número de drinks por evento, quantidade de pessoas e localidade
-    db.all(`
-      SELECT e.id AS eventId, e.name AS eventName, e.guestCount, e.location, COUNT(o.id) AS drinkCount
+    // Consulta para o número total de drinks por evento (contando a quantidade de drinks, não o número de pedidos)
+    const eventDrinkCountsQuery = `
+      SELECT 
+        e.id AS eventId, 
+        e.name AS eventName, 
+        e.location,
+        SUM(oi.quantidade) AS drinkCount
       FROM events e
       LEFT JOIN orders o ON o.eventId = e.id
+      LEFT JOIN order_items oi ON oi.order_id = o.id
       GROUP BY e.id
-    `, [], (err, eventDrinkCounts) => {
-      if (err) {
-        console.error("Erro ao buscar número de drinks por evento:", err.message);
-        return res.status(500).json({ message: "Erro ao buscar número de drinks por evento." });
-      }
+    `;
   
-      // Consulta para pegar os drinks com mais saída (mais pedidos)
-      db.all(`
-        SELECT d.name AS drinkName, SUM(o.quantity) AS totalOrders
-        FROM drinks d
-        LEFT JOIN orders o ON o.drinks LIKE '%' || d.name || '%'
-        GROUP BY d.id
-        ORDER BY totalOrders DESC
-        LIMIT 5
-      `, [], (err, topDrinks) => {
-        if (err) {
-          console.error("Erro ao buscar drinks mais vendidos:", err.message);
-          return res.status(500).json({ message: "Erro ao buscar drinks mais vendidos." });
-        }
-      
-        // Retorna os dados combinados
-        res.json({
-          eventDrinkCounts,  // Número de drinks, pessoas e localidade por evento
-          topDrinks,         // Drinks mais vendidos
+    // Consulta para os drinks mais vendidos (somando a quantidade de cada drink)
+    const topDrinksQuery = `
+      SELECT 
+        d.name AS drinkName, 
+        SUM(oi.quantidade) AS drinkOrders
+      FROM drinks d
+      LEFT JOIN order_items oi ON oi.drink_id = d.id
+      GROUP BY d.id
+      ORDER BY drinkOrders DESC
+      LIMIT 10
+    `;
+  
+    // Realiza ambas as consultas de forma assíncrona
+    Promise.all([
+      new Promise((resolve, reject) => {
+        db.all(eventDrinkCountsQuery, [], (err, rows) => {
+          if (err) reject(err);
+          resolve(rows);
         });
+      }),
+      new Promise((resolve, reject) => {
+        db.all(topDrinksQuery, [], (err, rows) => {
+          if (err) reject(err);
+          resolve(rows);
+        });
+      }),
+    ])
+      .then(([eventDrinkCounts, topDrinks]) => {
+        // Envia a resposta com os dados
+        res.json({ eventDrinkCounts, topDrinks });
+      })
+      .catch((err) => {
+        console.error("Erro ao buscar dados do dashboard:", err);
+        res.status(500).json({ message: "Erro ao buscar dados do dashboard" });
       });
-    });
   });
+  
   
   
 router.get("/ativos", (req, res) => {

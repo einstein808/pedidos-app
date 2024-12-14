@@ -96,12 +96,12 @@ const OrderForm = () => {
       alert("Por favor, preencha o nome do cliente.");
       return;
     }
-
+  
     if (!selectedDrinks.length) {
       alert("Por favor, selecione pelo menos um drink.");
       return;
     }
-
+  
     const newOrder = {
       name: orderType === "nome" ? name : null,
       drinks: selectedDrinks.map((d) => ({
@@ -112,9 +112,9 @@ const OrderForm = () => {
       whatsapp: whatsapp || null,
       eventId: selectedEvent ? selectedEvent.id : null,
     };
-
+  
     console.log("Pedido enviado para o backend:", newOrder); // Log para verificar os dados antes de enviar
-
+  
     try {
       const response = await fetch("http://localhost:4000/orders", {
         method: "POST",
@@ -123,24 +123,26 @@ const OrderForm = () => {
         },
         body: JSON.stringify(newOrder),
       });
-
+  
       if (!response.ok) {
         throw new Error(`Erro: ${response.statusText}`);
       }
-
+  
       alert("Pedido enviado com sucesso!");
-
+  
+      // Limpar campos de drinks, foto, nome e whatsapp, mas manter o evento
       setSelectedDrinks([]);
       setPhoto(null);
       setName("");
       setWhatsapp("");
-      setSelectedEvent(null);
       setShowFinalizeButton(true);
+      // Não resetamos o evento selecionado aqui!
     } catch (error) {
       console.error("Erro ao enviar o pedido:", error);
       alert("Erro ao enviar o pedido.");
     }
   };
+  
 
   return (
     <div className="order-form">

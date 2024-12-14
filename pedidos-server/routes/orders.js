@@ -17,6 +17,20 @@ const getDrinkNameById = (drinkId) => {
     });
   });
 };
+function getDrinkIdByName(name) {
+  return new Promise((resolve, reject) => {
+    db.get("SELECT id FROM drinks WHERE name = ?", [name], (err, row) => {
+      if (err) {
+        reject("Erro ao buscar drink ID: " + err.message);
+      } else if (row) {
+        resolve(row.id); // Retorna o id do drink
+      } else {
+        reject(`Drink ${name} não encontrado.`);
+      }
+    });
+  });
+}
+
 
 router.post("/", async (req, res) => {
   const { photo, name, whatsapp, eventId, drinks } = req.body;
@@ -41,7 +55,7 @@ router.post("/", async (req, res) => {
 
   try {
     // Inicia a transação de inserção no banco
-    await new Promise((resolve, reject) => {
+    const orderId = await new Promise((resolve, reject) => {
       db.run(
         "INSERT INTO orders (photo, name, whatsapp, eventId, status, data) VALUES (?, ?, ?, ?, ?, ?)",
         [newOrder.photo, newOrder.name, newOrder.whatsapp, newOrder.eventId, newOrder.status, newOrder.data],
@@ -50,13 +64,11 @@ router.post("/", async (req, res) => {
             console.error("Erro ao criar pedido:", err.message);
             reject(err);
           } else {
-            resolve(this.lastID);
+            resolve(this.lastID); // Retorna o id do pedido criado
           }
         }
       );
     });
-
-    const orderId = this.lastID; // id do pedido inserido
 
     // Agora buscamos os nomes dos drinks e inserimos na tabela order_items
     const drinksWithNames = await Promise.all(
@@ -66,6 +78,19 @@ router.post("/", async (req, res) => {
       })
     );
 
+    // Registrar os drinks na tabela order_items
+    for (const { name, quantity } of drinksWithNames) {
+      const drinkId = await getDrinkIdByName(name); // Função para buscar o drink_id a partir do nome
+      db.run(
+        "INSERT INTO order_items (order_id, drink_id, quantidade) VALUES (?, ?, ?)",
+        [orderId, drinkId, quantity],
+        (err) => {
+          if (err) {
+            console.error("Erro ao adicionar item ao pedido:", err.message);
+          }
+        }
+      );
+    }
 
     // Criando o objeto de resposta com os drinks com nome
     const orderData = {
